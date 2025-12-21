@@ -105,6 +105,7 @@ async function convert() {
     const configTemplate = document.getElementById('configTemplate').value;
     const includeFilter = document.getElementById('includeFilter').value.trim();
     const excludeFilter = document.getElementById('excludeFilter').value.trim();
+    const generateShortLink = document.getElementById('generateShortLink').checked;
 
     // 验证输入
     if (!apiKey) {
@@ -117,9 +118,27 @@ async function convert() {
         return;
     }
 
-    // 保存配置
+    // 保存配置到 localStorage
     saveConfig();
 
+    // 显示加载状态
+    showLoading();
+
+    try {
+        if (generateShortLink) {
+            // 生成短链接
+            await createShortLinkConfig(apiKey, subscriptions, nodes, outputFormat, outputVer, configTemplate, includeFilter, excludeFilter);
+        } else {
+            // 直接转换
+            await performDirectConversion(apiKey, subscriptions, nodes, outputFormat, outputVer, configTemplate, includeFilter, excludeFilter);
+        }
+    } catch (error) {
+        showError('转换失败: ' + error.message);
+    }
+}
+
+// 直接转换（不生成短链接）
+async function performDirectConversion(apiKey, subscriptions, nodes, outputFormat, outputVer, configTemplate, includeFilter, excludeFilter) {
     // 构建 API URL
     const params = new URLSearchParams();
     params.set('target', outputFormat);
@@ -161,35 +180,74 @@ async function convert() {
     // 添加 API 密钥
     params.set('token', apiKey);
 
-    // 显示加载状态
-    showLoading();
+    const response = await fetch(`/api/sub?${params.toString()}`);
 
-    try {
-        const response = await fetch(`/sub?${params.toString()}`);
-
-        if (response.status === 401) {
-            showError('API 密钥错误，请检查后重试');
-            return;
-        }
-
-        if (!response.ok) {
-            const error = await response.json();
-            showError(error.error || '转换失败，请检查输入');
-            return;
-        }
-
-        // 获取结果
-        const result = await response.text();
-
-        // 生成订阅链接
-        const subscriptionUrl = `${window.location.origin}/api/sub?${params.toString()}`;
-
-        // 显示结果
-        showResult(subscriptionUrl, result);
-
-    } catch (error) {
-        showError('网络错误：' + error.message);
+    if (response.status === 401) {
+        showError('API 密钥错误，请检查后重试');
+        return;
     }
+
+    if (!response.ok) {
+        const error = await response.json();
+        showError(error.error || '转换失败，请检查输入');
+        return;
+    }
+
+    // 获取结果
+    const result = await response.text();
+
+    // 生成订阅链接
+    const subscriptionUrl = `${window.location.origin}/api/sub?${params.toString()}`;
+
+    // 显示结果
+    showResult(subscriptionUrl, result, false);
+}
+
+// 创建短链接配置
+async function createShortLinkConfig(apiKey, subscriptions, nodes, outputFormat, outputVer, configTemplate, includeFilter, excludeFilter) {
+    const data = {
+        urls: subscriptions ? subscriptions.split('\n').map(s => s.trim()).filter(s => s.length > 0) : [],
+        nodes: nodes ? nodes.split('\n').map(n => n.trim()).filter(n => n.length > 0) : [],
+        target: outputFormat,
+        include: includeFilter || '',
+        exclude: excludeFilter || ''
+    };
+
+    // 只有 Clash 才发送配置模板
+    if (outputFormat === 'clash') {
+        data.config = configTemplate || '';
+    }
+
+    // 只有 Surge 才发送版本
+    if (outputFormat === 'surge' && outputVer) {
+        data.ver = parseInt(outputVer);
+    }
+
+    const response = await fetch('/api/config', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    });
+
+    if (response.status === 401) {
+        showError('API 密钥错误，请检查后重试');
+        return;
+    }
+
+    if (!response.ok) {
+        const error = await response.json();
+        showError(error.error || '创建短链接失败');
+        return;
+    }
+
+    const result = await response.json();
+    const shortUrl = `${window.location.origin}/sub/${result.id}`;
+
+    // 显示短链接结果
+    showResult(shortUrl, null, true, result.id);
 }
 
 // 显示加载状态
@@ -202,25 +260,47 @@ function showLoading() {
 }
 
 // 显示结果
-function showResult(url, content) {
+function showResult(url, content, isShortLink = false, configId = null) {
     const resultSection = document.getElementById('resultSection');
     const resultUrl = document.getElementById('resultUrl');
     const resultInfo = document.getElementById('resultInfo');
+    const resultTag = document.getElementById('resultTag');
+    const shortLinkActions = document.getElementById('shortLinkActions');
 
     resultSection.style.display = 'block';
     resultUrl.value = url;
 
-    // 统计节点数量
-    const nodeCount = (content.match(/- name:/g) || []).length;
-    const countText = nodeCount > 0 ? `✅ 转换成功！共 ${nodeCount} 个节点` : '✅ 转换成功！';
+    if (isShortLink) {
+        // 短链接模式
+        resultTag.textContent = '短链接';
+        resultInfo.innerHTML = `
+            <div class="success">
+                ✅ 短链接创建成功！
+                <br>
+                <small>此链接可在配置页面管理和修改</small>
+            </div>
+        `;
+        shortLinkActions.style.display = 'block';
 
-    resultInfo.innerHTML = `
-        <div class="success">
-            ${countText}
-            <br>
-            <small>请复制上方链接到对应客户端使用</small>
-        </div>
-    `;
+        // 保存配置 ID 到 localStorage，方便跳转到配置页面
+        localStorage.setItem('lastConfigId', configId);
+    } else {
+        // 直接转换模式
+        resultTag.textContent = '订阅链接';
+
+        // 统计节点数量
+        const nodeCount = content ? (content.match(/- name:/g) || []).length : 0;
+        const countText = nodeCount > 0 ? `✅ 转换成功！共 ${nodeCount} 个节点` : '✅ 转换成功！';
+
+        resultInfo.innerHTML = `
+            <div class="success">
+                ${countText}
+                <br>
+                <small>请复制上方链接到对应客户端使用</small>
+            </div>
+        `;
+        shortLinkActions.style.display = 'none';
+    }
 
     // 滚动到结果
     resultSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -264,5 +344,34 @@ function clearForm() {
         document.getElementById('includeFilter').value = '';
         document.getElementById('excludeFilter').value = '';
         document.getElementById('resultSection').style.display = 'none';
+    }
+}
+
+// 预览转换后的原始文本内容
+async function viewRawContent() {
+    const url = document.getElementById('resultUrl').value;
+    if (!url) return;
+
+    showLoading();
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('无法获取转换内容');
+        const text = await response.text();
+
+        // 使用 showAlert 展示内容（或者你可以后续添加更精美的弹窗）
+        // 这里我们简单打印，或者你可以考虑添加一个 Modal
+        const pre = document.createElement('pre');
+        pre.style.textAlign = 'left';
+        pre.style.maxHeight = '400px';
+        pre.style.overflow = 'auto';
+        pre.style.fontSize = '12px';
+        pre.style.padding = '1rem';
+        pre.style.background = 'rgba(0,0,0,0.05)';
+        pre.style.borderRadius = '8px';
+        pre.textContent = text;
+
+        showConfirm('转换内容预览', () => { }, '关闭', pre.outerHTML);
+    } catch (error) {
+        showError('内容预览失败: ' + error.message);
     }
 }

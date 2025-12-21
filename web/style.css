@@ -843,6 +843,7 @@ footer a:hover {
         opacity: 0;
         transform: translateY(18px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -850,10 +851,12 @@ footer a:hover {
 }
 
 @keyframes float {
+
     0%,
     100% {
         transform: translateY(0px);
     }
+
     50% {
         transform: translateY(-14px);
     }
@@ -863,10 +866,129 @@ footer a:hover {
     0% {
         box-shadow: 0 0 0 0 rgba(56, 242, 214, 0.5);
     }
+
     70% {
         box-shadow: 0 0 0 10px rgba(56, 242, 214, 0);
     }
+
     100% {
         box-shadow: 0 0 0 0 rgba(56, 242, 214, 0);
     }
+}
+
+/* Checkbox 样式 */
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--ink);
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--accent);
+}
+
+.checkbox-label span {
+    user-select: none;
+}
+
+/* 输入框样式增强 */
+.input-with-remove {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    align-items: center;
+}
+
+.input-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 8px;
+    padding: 0 0.75rem;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.input-num {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--accent);
+    background: rgba(var(--accent-rgb), 0.1);
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin-right: 0.75rem;
+}
+
+.input-wrapper input {
+    border: none !important;
+    background: transparent !important;
+    padding: 0.75rem 0 !important;
+    box-shadow: none !important;
+}
+
+/* 输入框操作按钮组 */
+.input-actions {
+    display: flex;
+    gap: 0.4rem;
+}
+
+.btn-icon-only {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    flex-shrink: 0;
+}
+
+/* 动画效果 */
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.removing {
+    animation: fadeOut 0.3s ease-in forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    to {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+}
+
+/* 单栏布局 */
+.layout.single {
+    grid-template-columns: 1fr;
+    max-width: 900px;
+    margin: 0 auto;
 }

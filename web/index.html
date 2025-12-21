@@ -72,6 +72,17 @@
                     </div>
                 </section>
 
+                <!-- 短链接选项 -->
+                <section class="card card-note">
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="generateShortLink">
+                            <span>生成短链接（可在配置页面管理）</span>
+                        </label>
+                        <small>勾选后将保存配置并返回短链接，方便后续修改和管理</small>
+                    </div>
+                </section>
+
                 <!-- 操作按钮 -->
                 <section class="actions">
                     <button class="btn btn-primary" onclick="convert()">
@@ -88,7 +99,7 @@
                 <section class="card result-card" id="resultSection" style="display: none;">
                     <div class="card-title">
                         <h2>转换结果</h2>
-                        <span class="card-tag">Share Link</span>
+                        <span class="card-tag" id="resultTag">订阅链接</span>
                     </div>
                     <div class="result-content">
                         <div class="result-url">
@@ -100,6 +111,16 @@
                         </div>
                         <div class="result-info">
                             <p id="resultInfo"></p>
+                        </div>
+                        <div id="shortLinkActions" style="display: none; margin-top: 1rem; display: flex; gap: 0.5rem;">
+                            <a href="configs.html" class="btn btn-secondary">
+                                <span class="btn-icon">⚙️</span>
+                                管理配置
+                            </a>
+                            <button class="btn btn-secondary" onclick="viewRawContent()">
+                                <span class="btn-icon">📄</span>
+                                预览内容
+                            </button>
                         </div>
                     </div>
                 </section>

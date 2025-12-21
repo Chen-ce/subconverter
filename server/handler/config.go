@@ -26,6 +26,7 @@ func CreateConfig(c *gin.Context) {
 		Config  string   `json:"config"`
 		Include string   `json:"include"`
 		Exclude string   `json:"exclude"`
+		Ver     int      `json:"ver"`
 	}
 	
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -49,6 +50,7 @@ func CreateConfig(c *gin.Context) {
 		Config:    req.Config,
 		Include:   req.Include,
 		Exclude:   req.Exclude,
+		Ver:       req.Ver,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 		Version:   1,
@@ -99,6 +101,7 @@ func UpdateConfig(c *gin.Context) {
 		Config  string   `json:"config"`
 		Include string   `json:"include"`
 		Exclude string   `json:"exclude"`
+		Ver     int      `json:"ver"`
 	}
 	
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -117,6 +120,7 @@ func UpdateConfig(c *gin.Context) {
 	cfg.Config = req.Config
 	cfg.Include = req.Include
 	cfg.Exclude = req.Exclude
+	cfg.Ver = req.Ver
 	
 	// 保存
 	if err := configStorage.Save(cfg); err != nil {
@@ -162,20 +166,12 @@ func ConvertByID(c *gin.Context) {
 	}
 	
 	// 设置查询参数（复用现有的 Convert 逻辑）
-	c.Request.URL.RawQuery = ""
-	q := c.Request.URL.Query()
+	q := url.Values{}
 	
 	// 从配置设置参数
 	q.Set("target", cfg.Target)
 	if len(cfg.URLs) > 0 {
-		urlStr := ""
-		for i, u := range cfg.URLs {
-			if i > 0 {
-				urlStr += "|"
-			}
-			urlStr += u
-		}
-		q.Set("url", urlStr)
+		q.Set("url", strings.Join(cfg.URLs, "|"))
 	}
 	
 	for _, node := range cfg.Nodes {
@@ -190,6 +186,9 @@ func ConvertByID(c *gin.Context) {
 	}
 	if cfg.Exclude != "" {
 		q.Set("exclude", cfg.Exclude)
+	}
+	if cfg.Ver > 0 {
+		q.Set("ver", fmt.Sprintf("%d", cfg.Ver))
 	}
 	
 	c.Request.URL.RawQuery = q.Encode()

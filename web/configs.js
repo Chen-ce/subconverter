@@ -1,20 +1,28 @@
-// 页面加载时初始化
+// 配置编辑器 - configs.js
+
+// 页面加载
 window.addEventListener('DOMContentLoaded', () => {
     loadSavedApiKey();
-    // 不自动加载配置，让用户主动点击刷新或创建
-});
 
-function notify(type, message) {
-    if (typeof window.showAlert === 'function') {
-        window.showAlert(message);
-        return;
+    // 监听输入框，支持粘贴后自动解析
+    const configInput = document.getElementById('configInput');
+    configInput.addEventListener('input', (e) => {
+        const val = e.target.value.trim();
+        // 如果是长链接且包含特征参数，自动加载
+        if (val.startsWith('http') && (val.includes('url=') || val.includes('token='))) {
+            loadConfig();
+        }
+    });
+
+    // 检查是否从首页跳转过来
+    const lastConfigId = localStorage.getItem('lastConfigId');
+    if (lastConfigId) {
+        document.getElementById('configInput').value = lastConfigId;
+        localStorage.removeItem('lastConfigId');
+        // 自动加载
+        setTimeout(() => loadConfig(), 500);
     }
-    if (window.Toast && typeof Toast[type] === 'function') {
-        Toast[type](message);
-        return;
-    }
-    alert(message);
-}
+});
 
 // 加载保存的 API 密钥
 function loadSavedApiKey() {
@@ -32,121 +40,78 @@ function saveApiKey() {
     }
 }
 
-// 获取 API 密钥（静默模式，不弹窗）
-function getApiKeySilent() {
-    const apiKey = document.getElementById('apiKey').value.trim();
-    if (apiKey) {
-        saveApiKey();
-    }
-    return apiKey || null;
-}
+// 加载配置
+async function loadConfig() {
+    const input = document.getElementById('configInput').value.trim();
 
-// 获取 API 密钥（提示模式）
-function getApiKey() {
-    const apiKey = document.getElementById('apiKey').value.trim();
-    if (!apiKey) {
-        notify('warning', '请先输入 API 密钥');
-        return null;
-    }
-    saveApiKey();
-    return apiKey;
-}
-
-// 加载配置列表
-async function loadConfigs() {
-    const apiKey = getApiKeySilent();
-    if (!apiKey) {
-        // 静默失败，显示提示信息
-        const container = document.getElementById('configsList');
-        container.innerHTML = '<p style="text-align: center; color: #718096;">请先输入 API 密钥，然后点击刷新列表</p>';
+    if (!input) {
+        notify('warning', '请输入链接或短链接 ID');
         return;
     }
 
+    // 判断输入类型
+    if (input.startsWith('http')) {
+        // 完整链接
+        await loadFromLongUrl(input);
+    } else {
+        // 短链接 ID
+        await loadFromShortLink(input);
+    }
+}
+
+// 从完整链接加载
+async function loadFromLongUrl(url) {
     try {
-        const response = await fetch('/api/configs', {
-            headers: {
-                'Authorization': `Bearer ${apiKey}`
+        const urlObj = new URL(url);
+        const params = new URLSearchParams(urlObj.search);
+
+        // 提取参数 (确保兼容多节点参数)
+        const urls = params.get('url') ? params.get('url').split('|') : [];
+        const nodes = params.getAll('node');
+        const target = params.get('target') || 'clash';
+        const config = params.get('config') || '';
+        const include = params.get('include') || '';
+        const exclude = params.get('exclude') || '';
+        const token = params.get('token') || '';
+        const ver = params.get('ver') || '';
+
+        // 保存并提示发现 token
+        if (token) {
+            const currentKey = document.getElementById('apiKey').value.trim();
+            if (currentKey !== token) {
+                document.getElementById('apiKey').value = token;
+                saveApiKey();
+                document.getElementById('apiKeyGroup').style.display = 'block';
+                notify('success', '已从链接中识别 API 密钥');
             }
-        });
-
-        if (response.status === 401) {
-            notify('error', 'API 密钥错误');
-            return;
         }
 
-        if (!response.ok) {
-            throw new Error('加载配置失败');
-        }
+        // 显示配置
+        showConfigEditor({
+            urls,
+            nodes,
+            target,
+            config,
+            include,
+            exclude,
+            ver
+        }, 'long');
 
-        const data = await response.json();
-        displayConfigs(data.configs || []);
+        notify('success', '配置内容已成功提取');
     } catch (error) {
-        notify('error', '加载配置失败: ' + error.message);
+        notify('error', '链接解析失败，请检查格式');
     }
 }
 
-// 显示配置列表
-function displayConfigs(configs) {
-    const container = document.getElementById('configsList');
+// 从短链接加载
+async function loadFromShortLink(id) {
+    const apiKey = document.getElementById('apiKey').value.trim();
 
-    if (configs.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: #718096;">暂无配置，点击上方按钮创建</p>';
+    if (!apiKey) {
+        document.getElementById('apiKeyGroup').style.display = 'block';
+        notify('warning', '加载短链接配置需要验证 API 密钥');
         return;
     }
-
-    let html = '<div class="configs-grid">';
-
-    configs.forEach(cfg => {
-        const shortUrl = `${window.location.origin}/sub/${cfg.id}`;
-        const createdAt = new Date(cfg.created_at).toLocaleString('zh-CN');
-        const updatedAt = new Date(cfg.updated_at).toLocaleString('zh-CN');
-
-        html += `
-            <div class="config-card">
-                <div class="config-header">
-                    <h3>${cfg.target.toUpperCase()}</h3>
-                    <span class="config-id">${cfg.id}</span>
-                </div>
-                <div class="config-body">
-                    <p><strong>订阅数量:</strong> ${cfg.urls.length}</p>
-                    <p><strong>节点数量:</strong> ${cfg.nodes ? cfg.nodes.length : 0}</p>
-                    <p><strong>规则模板:</strong> ${cfg.config || '默认'}</p>
-                    <p><strong>创建时间:</strong> ${createdAt}</p>
-                    <p><strong>更新时间:</strong> ${updatedAt}</p>
-                    <div class="config-url">
-                        <input type="text" value="${shortUrl}" readonly onclick="this.select()">
-                        <button class="btn-icon-only" onclick="copyUrl('${shortUrl}')" title="复制">📋</button>
-                    </div>
-                </div>
-                <div class="config-actions">
-                    <button class="btn btn-small btn-secondary" onclick="editConfig('${cfg.id}')">编辑</button>
-                    <button class="btn btn-small btn-danger" onclick="deleteConfig('${cfg.id}')">删除</button>
-                </div>
-            </div>
-        `;
-    });
-
-    html += '</div>';
-    container.innerHTML = html;
-}
-
-// 显示创建模态框
-function showCreateModal() {
-    document.getElementById('modalTitle').textContent = '创建配置';
-    document.getElementById('editingId').value = '';
-    document.getElementById('modalUrls').value = '';
-    document.getElementById('modalNodes').value = '';
-    document.getElementById('modalTarget').value = 'clash';
-    document.getElementById('modalConfig').value = '';
-    document.getElementById('modalInclude').value = '';
-    document.getElementById('modalExclude').value = '';
-    document.getElementById('configModal').style.display = 'flex';
-}
-
-// 编辑配置
-async function editConfig(id) {
-    const apiKey = getApiKey();
-    if (!apiKey) return;
 
     try {
         const response = await fetch(`/api/config/${id}`, {
@@ -155,60 +120,279 @@ async function editConfig(id) {
             }
         });
 
-        if (!response.ok) {
-            throw new Error('加载配置失败');
+        if (response.status === 401) {
+            notify('error', 'API 密钥验证失败');
+            return;
         }
 
-        const cfg = await response.json();
+        if (!response.ok) {
+            notify('error', '该配置不存在或已过期');
+            return;
+        }
 
-        document.getElementById('modalTitle').textContent = '编辑配置';
-        document.getElementById('editingId').value = cfg.id;
-        document.getElementById('modalUrls').value = cfg.urls.join('\n');
-        document.getElementById('modalNodes').value = cfg.nodes ? cfg.nodes.join('\n') : '';
-        document.getElementById('modalTarget').value = cfg.target;
-        document.getElementById('modalConfig').value = cfg.config || '';
-        document.getElementById('modalInclude').value = cfg.include || '';
-        document.getElementById('modalExclude').value = cfg.exclude || '';
-        document.getElementById('configModal').style.display = 'flex';
+        const config = await response.json();
+
+        // 显示配置
+        showConfigEditor(config, 'short', id);
+
+        notify('success', '短链接配置已加载');
     } catch (error) {
-        notify('error', '加载配置失败: ' + error.message);
+        notify('error', '加载失败: ' + error.message);
     }
 }
 
-// 保存配置
-async function saveConfig() {
-    const apiKey = getApiKey();
-    if (!apiKey) return;
+// 显示配置编辑器
+function showConfigEditor(config, type, id = null) {
+    const editorSection = document.getElementById('editorSection');
+    const configType = document.getElementById('configType');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const shortLinkDisplay = document.getElementById('shortLinkDisplay');
 
-    const id = document.getElementById('editingId').value;
-    const urls = document.getElementById('modalUrls').value.split('\n')
-        .map(u => u.trim())
-        .filter(u => u.length > 0);
-    const nodes = document.getElementById('modalNodes').value.split('\n')
-        .map(n => n.trim())
-        .filter(n => n.length > 0);
-    const target = document.getElementById('modalTarget').value;
-    const config = document.getElementById('modalConfig').value;
-    const include = document.getElementById('modalInclude').value.trim();
-    const exclude = document.getElementById('modalExclude').value.trim();
+    // 显示编辑器并清空之前的状态
+    editorSection.style.display = 'block';
+    shortLinkDisplay.style.display = 'none';
 
-    if (urls.length === 0) {
-        notify('warning', '请至少输入一个订阅链接');
+    // 设置类型标签
+    configType.textContent = type === 'short' ? '短链接配置' : '直接转换配置 (暂未保存)';
+
+    // 保存配置 ID
+    document.getElementById('configId').value = id || '';
+
+    // 显示/隐藏删除按钮
+    deleteBtn.style.display = (type === 'short' && id) ? 'inline-block' : 'none';
+
+    // 如果已有短链接，默认展示出来
+    if (type === 'short' && id) {
+        const shortUrl = `${window.location.origin}/sub/${id}`;
+        const shortLinkUrl = document.getElementById('shortLinkUrl');
+        shortLinkUrl.value = shortUrl;
+        shortLinkDisplay.style.display = 'block';
+        shortLinkDisplay.querySelector('label').textContent = '短链接地址';
+    }
+
+    // 填充订阅列表
+    const urlsList = document.getElementById('urlsList');
+    urlsList.innerHTML = '';
+    (config.urls || []).forEach(url => {
+        addUrlInput(url);
+    });
+    if (!config.urls || config.urls.length === 0) {
+        addUrlInput();
+    }
+
+    // 填充节点列表
+    const nodesList = document.getElementById('nodesList');
+    nodesList.innerHTML = '';
+    (config.nodes || []).forEach(node => {
+        addNodeInput(node);
+    });
+
+    // 填充其他字段
+    const targetSelect = document.getElementById('targetFormat');
+    targetSelect.value = config.target || 'clash';
+
+    // 处理 Surge 版本匹配
+    if (config.target === 'surge' && config.ver) {
+        const options = Array.from(targetSelect.options);
+        const match = options.find(opt => opt.value === 'surge' && opt.getAttribute('data-ver') == config.ver);
+        if (match) targetSelect.selectedIndex = match.index;
+    }
+
+    document.getElementById('configTemplate').value = config.config || '';
+    document.getElementById('includeFilter').value = config.include || '';
+    document.getElementById('excludeFilter').value = config.exclude || '';
+
+    // 滚动到编辑器
+    editorSection.scrollIntoView({ behavior: 'smooth' });
+}
+
+// 添加和移除动画处理
+function addUrlInput(value = '') {
+    const urlsList = document.getElementById('urlsList');
+    const div = document.createElement('div');
+    div.className = 'input-with-remove fade-in';
+    div.innerHTML = `
+        <div class="input-wrapper">
+            <span class="input-num">${urlsList.children.length + 1}</span>
+            <input type="text" class="url-input" value="${value}" placeholder="粘贴订阅链接...">
+        </div>
+        <div class="input-actions">
+            <button class="btn btn-icon-only btn-secondary" onclick="copyItemValue(this)" title="复制">
+                <span class="btn-icon">📋</span>
+            </button>
+            <button class="btn btn-icon-only btn-danger" onclick="removeInput(this, 'urlsList')" title="删除">
+                <span class="btn-icon">✕</span>
+            </button>
+        </div>
+    `;
+    urlsList.appendChild(div);
+    if (!value) div.querySelector('input').focus();
+}
+
+function addNodeInput(value = '') {
+    const nodesList = document.getElementById('nodesList');
+    const div = document.createElement('div');
+    div.className = 'input-with-remove fade-in';
+    div.innerHTML = `
+        <div class="input-wrapper">
+            <span class="input-num">${nodesList.children.length + 1}</span>
+            <input type="text" class="node-input" value="${value}" placeholder="粘贴节点链接 (vmess/ss/trojan)...">
+        </div>
+        <div class="input-actions">
+            <button class="btn btn-icon-only btn-secondary" onclick="copyItemValue(this)" title="复制">
+                <span class="btn-icon">📋</span>
+            </button>
+            <button class="btn btn-icon-only btn-danger" onclick="removeInput(this, 'nodesList')" title="删除">
+                <span class="btn-icon">✕</span>
+            </button>
+        </div>
+    `;
+    nodesList.appendChild(div);
+    if (!value) div.querySelector('input').focus();
+}
+
+function removeInput(btn, listId) {
+    const item = btn.closest('.input-with-remove');
+    item.classList.add('removing');
+    setTimeout(() => {
+        item.remove();
+        // 重新对序号排序
+        const list = document.getElementById(listId);
+        Array.from(list.children).forEach((child, index) => {
+            child.querySelector('.input-num').textContent = index + 1;
+        });
+        // 如果列表空了，自动加一个空的
+        if (list.children.length === 0 && listId === 'urlsList') {
+            addUrlInput();
+        }
+    }, 300);
+}
+
+// 复制单项内容
+function copyItemValue(btn) {
+    const input = btn.closest('.input-with-remove').querySelector('input');
+    const val = input.value;
+    if (!val) return;
+
+    navigator.clipboard.writeText(val).then(() => {
+        notify('success', '内容已复制到剪贴板');
+    });
+}
+
+// 重置编辑器
+function resetEditor() {
+    showConfirm('确定要重置编辑器吗？所有未保存的改动都将丢失。', () => {
+        document.getElementById('editorSection').style.display = 'none';
+        document.getElementById('configId').value = '';
+        document.getElementById('configInput').value = '';
+        notify('success', '编辑器已重置');
+    });
+}
+
+// 预览当前配置的转换结果（直接生成 API 链接）
+function previewConfig() {
+    const urls = Array.from(document.querySelectorAll('.url-input'))
+        .map(input => input.value.trim())
+        .filter(url => url.length > 0);
+
+    const nodes = Array.from(document.querySelectorAll('.node-input'))
+        .map(input => input.value.trim())
+        .filter(node => node.length > 0);
+
+    const targetSelect = document.getElementById('targetFormat');
+    const target = targetSelect.value;
+    const apiKey = document.getElementById('apiKey').value.trim();
+
+    if (urls.length === 0 && nodes.length === 0) {
+        notify('warning', '请至少添加一个订阅或节点');
         return;
     }
+
+    const params = new URLSearchParams();
+    params.set('target', target);
+
+    // 处理 Surge 版本
+    if (target === 'surge') {
+        const selectedOption = targetSelect.options[targetSelect.selectedIndex];
+        const ver = selectedOption.getAttribute('data-ver');
+        if (ver) params.set('ver', ver);
+    }
+
+    if (urls.length > 0) params.set('url', urls.join('|'));
+    nodes.forEach(n => params.append('node', n));
+
+    const config = document.getElementById('configTemplate').value;
+    const include = document.getElementById('includeFilter').value.trim();
+    const exclude = document.getElementById('excludeFilter').value.trim();
+
+    if (target === 'clash' && config) params.set('config', config);
+    if (include) params.set('include', include);
+    if (exclude) params.set('exclude', exclude);
+    if (apiKey) params.set('token', apiKey);
+
+    const fullUrl = `${window.location.origin}/api/sub?${params.toString()}`;
+
+    // 显示预览结果区域
+    const shortLinkDisplay = document.getElementById('shortLinkDisplay');
+    const shortLinkUrl = document.getElementById('shortLinkUrl');
+
+    shortLinkUrl.value = fullUrl;
+    shortLinkDisplay.style.display = 'block';
+    shortLinkDisplay.querySelector('label').textContent = '即时预览链接 (带参数)';
+
+    notify('success', '已生成直接转换链接');
+    shortLinkDisplay.scrollIntoView({ behavior: 'smooth' });
+}
+
+// 保存配置 (创建或更新)
+async function saveConfig() {
+    const configId = document.getElementById('configId').value;
+    const apiKey = document.getElementById('apiKey').value.trim();
+
+    if (!apiKey) {
+        notify('warning', '保存配置必须提供 API 密钥');
+        return;
+    }
+
+    const urls = Array.from(document.querySelectorAll('.url-input'))
+        .map(input => input.value.trim())
+        .filter(url => url.length > 0);
+
+    const nodes = Array.from(document.querySelectorAll('.node-input'))
+        .map(input => input.value.trim())
+        .filter(node => node.length > 0);
+
+    if (urls.length === 0 && nodes.length === 0) {
+        notify('warning', '请至少添加一个订阅或节点');
+        return;
+    }
+
+    const targetSelect = document.getElementById('targetFormat');
+    const target = targetSelect.value;
 
     const data = {
         urls,
         nodes,
-        target,
-        config,
-        include,
-        exclude
+        target: target,
+        include: document.getElementById('includeFilter').value.trim(),
+        exclude: document.getElementById('excludeFilter').value.trim()
     };
 
+    // 只有 Clash 才传 config
+    if (target === 'clash') {
+        data.config = document.getElementById('configTemplate').value;
+    }
+
+    // 处理 Surge 版本
+    if (target === 'surge') {
+        const selectedOption = targetSelect.options[targetSelect.selectedIndex];
+        const ver = selectedOption.getAttribute('data-ver');
+        if (ver) data.ver = parseInt(ver);
+    }
+
     try {
-        const url = id ? `/api/config/${id}` : '/api/config';
-        const method = id ? 'PUT' : 'POST';
+        const url = configId ? `/api/config/${configId}` : '/api/config';
+        const method = configId ? 'PUT' : 'POST';
 
         const response = await fetch(url, {
             method,
@@ -219,94 +403,91 @@ async function saveConfig() {
             body: JSON.stringify(data)
         });
 
-        if (!response.ok) {
-            throw new Error('保存配置失败');
+        if (response.status === 401) {
+            notify('error', 'API 密钥身份验证失败');
+            return;
         }
 
-        closeModal();
-        loadConfigs();
-        notify('success', id ? '配置已更新' : '配置已创建');
+        if (!response.ok) {
+            const error = await response.json();
+            notify('error', error.error || '保存失败，请检查输入');
+            return;
+        }
 
+        const result = await response.json();
+
+        // 更新 UI 状态为已保存的配置
+        if (!configId) {
+            document.getElementById('configId').value = result.id;
+            document.getElementById('configType').textContent = '短链接配置';
+            document.getElementById('deleteBtn').style.display = 'inline-block';
+            document.getElementById('configInput').value = result.id;
+        }
+
+        const shortUrl = `${window.location.origin}/sub/${result.id || configId}`;
+        const shortLinkUrl = document.getElementById('shortLinkUrl');
+        shortLinkUrl.value = shortUrl;
+        document.getElementById('shortLinkDisplay').style.display = 'block';
+        document.getElementById('shortLinkDisplay').querySelector('label').textContent = '短链接地址';
+
+        notify('success', configId ? '配置已更新并同步到短链接' : '配置已保存，短链接生成成功');
     } catch (error) {
-        notify('error', '保存配置失败: ' + error.message);
+        notify('error', '网络异常: ' + error.message);
     }
 }
 
 // 删除配置
-async function deleteConfig(id) {
-    showConfirm('确定要删除这个配置吗？', async () => {
-        const apiKey = getApiKey();
-        if (!apiKey) return;
+async function deleteConfig() {
+    const configId = document.getElementById('configId').value;
+    const apiKey = document.getElementById('apiKey').value.trim();
 
+    if (!configId) return;
+
+    showConfirm('确定要永久删除这个短链接配置吗？', async () => {
         try {
-            const response = await fetch(`/api/config/${id}`, {
+            const response = await fetch(`/api/config/${configId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${apiKey}`
                 }
             });
 
-            if (!response.ok) {
-                throw new Error('删除配置失败');
+            if (response.status === 401) {
+                notify('error', '删除失败: API 密钥错误');
+                return;
             }
 
-            loadConfigs();
-            notify('success', '配置已删除');
+            if (!response.ok) {
+                notify('error', '删除失败，请稍后重试');
+                return;
+            }
 
+            notify('success', '配置已成功删除');
+            document.getElementById('editorSection').style.display = 'none';
+            document.getElementById('configInput').value = '';
         } catch (error) {
-            notify('error', '删除配置失败: ' + error.message);
+            notify('error', '系统错误: ' + error.message);
         }
     });
 }
 
-// 关闭模态框
-function closeModal() {
-    document.getElementById('configModal').style.display = 'none';
+// 复制短链接
+function copyShortLink() {
+    const shortLinkUrl = document.getElementById('shortLinkUrl');
+    shortLinkUrl.select();
+    document.execCommand('copy');
+    notify('success', '链接已复制到剪贴板');
 }
 
-// 复制 URL
-function copyUrl(url) {
-    navigator.clipboard.writeText(url).then(() => {
-        notify('success', '已复制到剪贴板');
-    }).catch(() => {
-        // 降级方案
-        const input = document.createElement('input');
-        input.value = url;
-        document.body.appendChild(input);
-        input.select();
-        document.execCommand('copy');
-        document.body.removeChild(input);
-        notify('success', '已复制到剪贴板');
-    });
-}
-
-// 点击模态框外部关闭
-window.onclick = function (event) {
-    const modal = document.getElementById('configModal');
-    if (event.target === modal) {
-        closeModal();
-    };
-}
-
-// 更新模态框模板说明
-function updateModalTemplateDescription() {
-    const template = document.getElementById('modalConfig').value;
-    const descElement = document.getElementById('modalTemplateDescription');
-
-    const descriptions = {
-        '': '使用基础配置，适合快速测试',
-        'default': '✨ 简化版规则\n• 基础分流（代理/直连）\n• 适合节点较少的情况',
-        'acl4ssr': '🎯 本地完整版\n• 完整的分流规则\n• Netflix、YouTube、ChatGPT 等服务分组\n• 地区节点分组（香港、日本、美国等）',
-        'acl4ssr_online': '📡 在线基础版（推荐）\n• ✅ 去广告\n• ✅ 自动测速\n• ✅ 微软/苹果分流\n• 适合日常使用',
-        'acl4ssr_online_full': '🚀 在线完整版（功能最全）\n• ✅ 全功能分流\n• ✅ 流媒体分组（Netflix、Disney+、YouTube等）\n• ✅ AI服务分组（ChatGPT、Bing等）\n• ✅ 游戏平台分组\n• 适合节点丰富的用户',
-        'acl4ssr_online_mini': '⚡ 在线精简版\n• ✅ 基础去广告\n• ✅ 自动测速\n• ✅ 核心分流规则\n• 适合节点较少的情况',
-        'acl4ssr_online_adblock': '🛡️ 强化去广告版\n• ✅✅ 增强广告拦截\n• ✅ 应用净化\n• ✅ 隐私保护\n• 适合注重去广告的用户',
-        'acl4ssr_online_noauto': '🎮 无自动测速版\n• ✅ 完整分流规则\n• ❌ 无自动测速（手动选择节点）\n• 适合喜欢手动控制的用户'
-    };
-
-    if (descElement) {
-        const desc = descriptions[template] || '';
-        descElement.textContent = desc;
-        descElement.style.display = desc ? 'block' : 'none';
+// 通用通知函数
+function notify(type, message) {
+    if (typeof window.showAlert === 'function') {
+        window.showAlert(message);
+        return;
     }
+    if (window.Toast && typeof Toast[type] === 'function') {
+        Toast[type](message);
+        return;
+    }
+    alert(message);
 }

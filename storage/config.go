@@ -19,6 +19,7 @@ type SubscriptionConfig struct {
 	Config    string    `json:"config,omitempty"`
 	Include   string    `json:"include,omitempty"`
 	Exclude   string    `json:"exclude,omitempty"`
+	Ver       int       `json:"ver,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Version   int       `json:"version"`
