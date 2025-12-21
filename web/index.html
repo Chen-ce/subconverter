@@ -9,10 +9,22 @@
 </head>
 
 <body>
-    <div class="container">
-        <header>
-            <h1>🚀 Subconverter</h1>
-            <p class="subtitle">订阅合并与转换工具</p>
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <div class="bg-orb orb-3"></div>
+    <div class="grain"></div>
+
+    <div class="page">
+        <header class="hero">
+            <div class="hero-top">
+                <span class="badge">Subconverter Studio</span>
+                <div class="status-pill">
+                    <span class="pulse"></span>
+                    <span>API 在线 · 极速转换</span>
+                </div>
+            </div>
+            <h1>订阅合并，轻松转制</h1>
+            <p class="subtitle">更快的订阅整合与多客户端输出，专注稳定、清晰与美感。</p>
         </header>
 
         <nav class="nav-tabs">
@@ -20,117 +32,145 @@
             <a href="configs.html" class="nav-tab">配置管理</a>
         </nav>
 
-        <main>
-            <!-- API 密钥 -->
-            <section class="card">
-                <h2>🔐 API 密钥</h2>
-                <div class="form-group">
-                    <input type="password" id="apiKey" placeholder="请输入 API 密钥">
-                    <small>首次使用需要输入 API 密钥，请联系管理员获取</small>
-                </div>
-            </section>
-
-            <!-- 订阅链接 -->
-            <section class="card">
-                <h2>📋 订阅链接</h2>
-                <div class="form-group">
-                    <textarea id="subscriptions" rows="4"
-                        placeholder="请输入订阅链接，一行一个&#10;https://example.com/subscription1&#10;https://example.com/subscription2"></textarea>
-                    <small>支持多个订阅链接，每行一个</small>
-                </div>
-            </section>
-
-            <!-- 单独节点 -->
-            <section class="card">
-                <h2>🔗 单独节点（可选）</h2>
-                <div class="form-group">
-                    <textarea id="nodes" rows="3"
-                        placeholder="请输入节点链接，一行一个&#10;vmess://...&#10;trojan://..."></textarea>
-                    <small>支持 VMess、VLESS、Trojan、SS、SSR 协议</small>
-                </div>
-            </section>
-
-            <!-- 配置选项 -->
-            <section class="card">
-                <h2>⚙️ 配置选项</h2>
-
-                <div class="form-group">
-                    <label for="outputFormat">客户端类型</label>
-                    <select id="outputFormat">
-                        <option value="clash">Clash</option>
-                        <option value="singbox">Sing-box</option>
-                        <option value="surge&ver=4">Surge 4</option>
-                        <option value="surge&ver=3">Surge 3</option>
-                        <option value="quanx">Quantumult X</option>
-                        <option value="quan">Quantumult</option>
-                        <option value="loon">Loon</option>
-                        <option value="surfboard">Surfboard</option>
-                        <option value="v2ray">V2Ray</option>
-                        <option value="ss">Shadowsocks</option>
-                        <option value="ssr">ShadowsocksR</option>
-                        <option value="mixed">通用格式 (Shadowrocket等)</option>
-                    </select>
-                    <small>选择你使用的代理客户端</small>
-                </div>
-
-                <div class="form-group" id="configGroup">
-                    <label for="configTemplate">规则模板</label>
-                    <select id="configTemplate" onchange="updateTemplateDescription()">
-                        <option value="">默认</option>
-                        <option value="default">Default（简化版）</option>
-                        <option value="acl4ssr">ACL4SSR（本地完整版）</option>
-                        <optgroup label="ACL4SSR 在线版（推荐）">
-                            <option value="acl4ssr_online">ACL4SSR 在线基础版</option>
-                            <option value="acl4ssr_online_full">ACL4SSR 在线完整版</option>
-                            <option value="acl4ssr_online_mini">ACL4SSR 在线精简版</option>
-                            <option value="acl4ssr_online_adblock">ACL4SSR 强化去广告版</option>
-                            <option value="acl4ssr_online_noauto">ACL4SSR 无自动测速版</option>
-                        </optgroup>
-                    </select>
-                    <div id="templateDescription" class="template-desc"></div>
-                </div>
-
-                <div class="form-group">
-                    <label for="includeFilter">包含关键词（可选）</label>
-                    <input type="text" id="includeFilter" placeholder="香港|HK|日本|JP">
-                    <small>只保留包含这些关键词的节点，用 | 分隔</small>
-                </div>
-
-                <div class="form-group">
-                    <label for="excludeFilter">排除关键词（可选）</label>
-                    <input type="text" id="excludeFilter" placeholder="x2|x3|x5">
-                    <small>排除包含这些关键词的节点，用 | 分隔</small>
-                </div>
-            </section>
-
-            <!-- 操作按钮 -->
-            <section class="actions">
-                <button class="btn btn-primary" onclick="convert()">
-                    <span class="btn-icon">🚀</span>
-                    开始转换
-                </button>
-                <button class="btn btn-secondary" onclick="clearForm()">
-                    <span class="btn-icon">🗑️</span>
-                    清空表单
-                </button>
-            </section>
-
-            <!-- 结果显示 -->
-            <section class="card result-card" id="resultSection" style="display: none;">
-                <h2>✅ 转换结果</h2>
-                <div class="result-content">
-                    <div class="result-url">
-                        <input type="text" id="resultUrl" readonly>
-                        <button class="btn btn-copy" onclick="copyResult()">
-                            <span class="btn-icon">📋</span>
-                            复制
-                        </button>
+        <main class="layout">
+            <div class="column">
+                <!-- API 密钥 -->
+                <section class="card card-spotlight">
+                    <div class="card-title">
+                        <h2>API 密钥</h2>
+                        <span class="card-tag">安全通行证</span>
                     </div>
-                    <div class="result-info">
-                        <p id="resultInfo"></p>
+                    <div class="form-group">
+                        <input type="password" id="apiKey" placeholder="请输入 API 密钥">
+                        <small>首次使用需要输入 API 密钥，请联系管理员获取</small>
                     </div>
-                </div>
-            </section>
+                </section>
+
+                <!-- 订阅链接 -->
+                <section class="card">
+                    <div class="card-title">
+                        <h2>订阅链接</h2>
+                        <span class="card-tag">多源合并</span>
+                    </div>
+                    <div class="form-group">
+                        <textarea id="subscriptions" rows="4"
+                            placeholder="请输入订阅链接，一行一个&#10;https://example.com/subscription1&#10;https://example.com/subscription2"></textarea>
+                        <small>支持多个订阅链接，每行一个</small>
+                    </div>
+                </section>
+
+                <!-- 单独节点 -->
+                <section class="card">
+                    <div class="card-title">
+                        <h2>单独节点（可选）</h2>
+                        <span class="card-tag">补充节点</span>
+                    </div>
+                    <div class="form-group">
+                        <textarea id="nodes" rows="3"
+                            placeholder="请输入节点链接，一行一个&#10;vmess://...&#10;trojan://..."></textarea>
+                        <small>支持 VMess、VLESS、Trojan、SS、SSR 协议</small>
+                    </div>
+                </section>
+
+                <!-- 操作按钮 -->
+                <section class="actions">
+                    <button class="btn btn-primary" onclick="convert()">
+                        <span class="btn-icon">✨</span>
+                        开始转换
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearForm()">
+                        <span class="btn-icon">🧹</span>
+                        清空表单
+                    </button>
+                </section>
+
+                <!-- 结果显示 -->
+                <section class="card result-card" id="resultSection" style="display: none;">
+                    <div class="card-title">
+                        <h2>转换结果</h2>
+                        <span class="card-tag">可复制链接</span>
+                    </div>
+                    <div class="result-content">
+                        <div class="result-url">
+                            <input type="text" id="resultUrl" readonly>
+                            <button class="btn btn-copy" onclick="copyResult()">
+                                <span class="btn-icon">📋</span>
+                                复制
+                            </button>
+                        </div>
+                        <div class="result-info">
+                            <p id="resultInfo"></p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <div class="column">
+                <!-- 配置选项 -->
+                <section class="card card-config">
+                    <div class="card-title">
+                        <h2>配置选项</h2>
+                        <span class="card-tag">客户端适配</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="outputFormat">客户端类型</label>
+                        <select id="outputFormat">
+                            <option value="clash">Clash</option>
+                            <option value="singbox">Sing-box</option>
+                            <option value="surge" data-ver="4">Surge 4</option>
+                            <option value="surge" data-ver="3">Surge 3</option>
+                            <option value="quanx">Quantumult X</option>
+                            <option value="quan">Quantumult</option>
+                            <option value="loon">Loon</option>
+                            <option value="surfboard">Surfboard</option>
+                            <option value="v2ray">V2Ray</option>
+                            <option value="ss">Shadowsocks</option>
+                            <option value="ssr">ShadowsocksR</option>
+                            <option value="mixed">通用格式 (Shadowrocket等)</option>
+                        </select>
+                        <small>选择你使用的代理客户端</small>
+                    </div>
+
+                    <div class="form-group" id="configGroup">
+                        <label for="configTemplate">规则模板</label>
+                        <select id="configTemplate" onchange="updateTemplateDescription()">
+                            <option value="">默认</option>
+                            <option value="default">Default（简化版）</option>
+                            <option value="acl4ssr">ACL4SSR（本地完整版）</option>
+                            <optgroup label="ACL4SSR 在线版（推荐）">
+                                <option value="acl4ssr_online">ACL4SSR 在线基础版</option>
+                                <option value="acl4ssr_online_full">ACL4SSR 在线完整版</option>
+                                <option value="acl4ssr_online_mini">ACL4SSR 在线精简版</option>
+                                <option value="acl4ssr_online_adblock">ACL4SSR 强化去广告版</option>
+                                <option value="acl4ssr_online_noauto">ACL4SSR 无自动测速版</option>
+                            </optgroup>
+                        </select>
+                        <div id="templateDescription" class="template-desc"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="includeFilter">包含关键词（可选）</label>
+                        <input type="text" id="includeFilter" placeholder="香港|HK|日本|JP">
+                        <small>只保留包含这些关键词的节点，用 | 分隔</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="excludeFilter">排除关键词（可选）</label>
+                        <input type="text" id="excludeFilter" placeholder="x2|x3|x5">
+                        <small>排除包含这些关键词的节点，用 | 分隔</small>
+                    </div>
+                </section>
+
+                <section class="card card-note">
+                    <h3>快速提示</h3>
+                    <ul>
+                        <li>订阅合并后会自动去重，相同节点不会重复输出。</li>
+                        <li>仅 Clash 支持规则模板，其它格式会忽略此项。</li>
+                        <li>复制生成的链接，可直接粘贴到客户端使用。</li>
+                    </ul>
+                </section>
+            </div>
         </main>
 
         <footer>
@@ -145,7 +185,7 @@
                     服务状态
                 </a>
             </p>
-            <p class="footer-text">Powered by Subconverter</p>
+            <p class="footer-text">Crafted with Subconverter</p>
         </footer>
     </div>
 

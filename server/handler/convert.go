@@ -118,11 +118,24 @@ func Convert(c *gin.Context) {
 	var err error
 	var contentType string
 	
-	// 解析 target 参数
+	// 解析 target 参数（兼容旧格式 surge&ver=X）
 	target = strings.ToLower(target)
 	
-	// 获取版本参数（用于 Surge）- 从 query 参数读取
+	// 获取版本参数（用于 Surge）
 	version := 4 // 默认版本
+	
+	// 兼容旧格式：target=surge&ver=X
+	if strings.Contains(target, "&ver=") {
+		parts := strings.Split(target, "&")
+		target = parts[0] // 提取 surge
+		for _, part := range parts[1:] {
+			if strings.HasPrefix(part, "ver=") {
+				fmt.Sscanf(part, "ver=%d", &version)
+			}
+		}
+	}
+	
+	// 新格式：target=surge&ver=X（独立 query 参数）
 	if verParam := c.Query("ver"); verParam != "" {
 		fmt.Sscanf(verParam, "%d", &version)
 	}
