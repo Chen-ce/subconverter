@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>配置管理 - Subconverter</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>📋 配置管理</h1>
+            <p class="subtitle">管理你的订阅配置</p>
+        </header>
+
+        <nav class="nav-tabs">
+            <a href="index.html" class="nav-tab">转换工具</a>
+            <a href="configs.html" class="nav-tab active">配置管理</a>
+        </nav>
+
+        <main>
+            <!-- API 密钥 -->
+            <section class="card">
+                <h2>🔐 API 密钥</h2>
+                <div class="form-group">
+                    <input type="password" id="apiKey" placeholder="请输入 API 密钥">
+                    <small>需要 API 密钥才能管理配置</small>
+                </div>
+            </section>
+
+            <!-- 配置列表 -->
+            <section class="card">
+                <h2>📚 我的配置</h2>
+                <div class="actions" style="margin-bottom: 1rem;">
+                    <button class="btn btn-primary" onclick="showCreateModal()">
+                        <span class="btn-icon">➕</span>
+                        创建新配置
+                    </button>
+                    <button class="btn btn-secondary" onclick="loadConfigs()">
+                        <span class="btn-icon">🔄</span>
+                        刷新列表
+                    </button>
+                </div>
+
+                <div id="configsList"></div>
+            </section>
+        </main>
+
+        <!-- 创建/编辑配置模态框 -->
+        <div id="configModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modalTitle">创建配置</h2>
+                    <span class="close" onclick="closeModal()">&times;</span>
+                </div>
+
+                <div class="modal-body">
+                    <input type="hidden" id="editingId">
+
+                    <div class="form-group">
+                        <label>订阅链接</label>
+                        <textarea id="modalUrls" rows="3" placeholder="一行一个订阅链接"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>单独节点（可选）</label>
+                        <textarea id="modalNodes" rows="2" placeholder="一行一个节点链接"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>客户端类型</label>
+                        <select id="modalTarget">
+                            <option value="clash">Clash</option>
+                            <option value="singbox">Sing-box</option>
+                            <option value="surge">Surge 4</option>
+                            <option value="quanx">Quantumult X</option>
+                            <option value="loon">Loon</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>规则模板（可选）</label>
+                        <select id="modalConfig">
+                            <option value="">默认</option>
+                            <option value="default">Default</option>
+                            <option value="acl4ssr">ACL4SSR</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>包含关键词（可选）</label>
+                        <input type="text" id="modalInclude" placeholder="香港|日本|美国">
+                    </div>
+
+                    <div class="form-group">
+                        <label>排除关键词（可选）</label>
+                        <input type="text" id="modalExclude" placeholder="x2|x3|过期">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+                    <button class="btn btn-primary" onclick="saveConfig()">保存</button>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>
+                <a href="https://github.com/Chen-ce/subconverter" target="_blank">
+                    <span class="footer-icon">⭐</span>
+                    GitHub
+                </a>
+                |
+                <a href="/health" target="_blank">
+                    <span class="footer-icon">💚</span>
+                    服务状态
+                </a>
+            </p>
+            <p class="footer-text">Powered by Subconverter</p>
+        </footer>
+    </div>
+
+    <script src="configs.js"></script>
+</body>
+
+</html>
