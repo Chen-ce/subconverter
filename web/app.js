@@ -196,8 +196,12 @@ async function performDirectConversion(apiKey, subscriptions, nodes, outputForma
     // 获取结果
     const result = await response.text();
 
-    // 生成订阅链接
-    const subscriptionUrl = `${window.location.origin}/api/sub?${params.toString()}`;
+    // 生成订阅链接 (需包含 token)
+    const finalParams = new URLSearchParams(params.toString());
+    if (!finalParams.has('token') && apiKey) {
+        finalParams.set('token', apiKey);
+    }
+    const subscriptionUrl = `${window.location.origin}/api/sub?${finalParams.toString()}`;
 
     // 显示结果
     showResult(subscriptionUrl, result, false);
@@ -244,10 +248,12 @@ async function createShortLinkConfig(apiKey, subscriptions, nodes, outputFormat,
     }
 
     const result = await response.json();
-    const shortUrl = `${window.location.origin}/sub/${result.id}?token=${encodeURIComponent(apiKey)}`;
+    const id = result.id;
+    const currentApiKey = document.getElementById('apiKey').value.trim();
+    const shortUrl = `${window.location.origin}/sub/${id}${currentApiKey ? `?token=${encodeURIComponent(currentApiKey)}` : ''}`;
 
     // 显示短链接结果
-    showResult(shortUrl, null, true, result.id);
+    showResult(shortUrl, null, true, id);
 }
 
 // 显示加载状态
