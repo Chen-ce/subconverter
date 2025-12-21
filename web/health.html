@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>服务状态 - Subconverter</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .status-page {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        .status-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .status-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: pulse 2s infinite;
+        }
+
+        .status-icon.online {
+            color: var(--accent);
+        }
+
+        .status-icon.offline {
+            color: #d1495b;
+        }
+
+        .status-title {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            color: var(--ink);
+        }
+
+        .status-subtitle {
+            color: var(--muted);
+            margin-bottom: 2rem;
+        }
+
+        .status-info {
+            display: grid;
+            gap: 1rem;
+            text-align: left;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: rgba(29, 120, 116, 0.05);
+            border-radius: 8px;
+        }
+
+        .info-label {
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        .info-value {
+            color: var(--ink);
+            font-family: 'SFMono-Regular', monospace;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 2rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--accent);
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+
+        .back-link:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .loading {
+            color: var(--muted);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <div class="bg-orb orb-3"></div>
+    <div class="grain"></div>
+
+    <div class="page status-page">
+        <div class="status-card">
+            <div id="statusIcon" class="status-icon loading">⏳</div>
+            <h1 id="statusTitle" class="status-title">检查中...</h1>
+            <p id="statusSubtitle" class="status-subtitle">正在连接服务器</p>
+
+            <div id="statusInfo" class="status-info" style="display: none;">
+                <div class="info-row">
+                    <span class="info-label">服务状态</span>
+                    <span class="info-value" id="serviceStatus">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">响应时间</span>
+                    <span class="info-value" id="responseTime">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">服务器时间</span>
+                    <span class="info-value" id="serverTime">-</span>
+                </div>
+            </div>
+
+            <a href="/" class="back-link">返回首页</a>
+        </div>
+    </div>
+
+    <script>
+        async function checkHealth() {
+            const startTime = Date.now();
+
+            try {
+                const response = await fetch('/health');
+                const endTime = Date.now();
+                const responseTime = endTime - startTime;
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // 显示在线状态
+                    document.getElementById('statusIcon').className = 'status-icon online';
+                    document.getElementById('statusIcon').textContent = '✓';
+                    document.getElementById('statusTitle').textContent = '服务正常运行';
+                    document.getElementById('statusSubtitle').textContent = data.message || 'Subconverter is running';
+
+                    // 显示详细信息
+                    document.getElementById('serviceStatus').textContent = '在线';
+                    document.getElementById('responseTime').textContent = responseTime + ' ms';
+                    document.getElementById('serverTime').textContent = new Date().toLocaleString('zh-CN');
+                    document.getElementById('statusInfo').style.display = 'grid';
+                } else {
+                    throw new Error('服务响应异常');
+                }
+            } catch (error) {
+                // 显示离线状态
+                document.getElementById('statusIcon').className = 'status-icon offline';
+                document.getElementById('statusIcon').textContent = '✕';
+                document.getElementById('statusTitle').textContent = '服务不可用';
+                document.getElementById('statusSubtitle').textContent = error.message;
+
+                // 显示错误信息
+                document.getElementById('serviceStatus').textContent = '离线';
+                document.getElementById('responseTime').textContent = '-';
+                document.getElementById('serverTime').textContent = new Date().toLocaleString('zh-CN');
+                document.getElementById('statusInfo').style.display = 'grid';
+            }
+        }
+
+        // 页面加载时检查
+        checkHealth();
+
+        // 每30秒自动刷新
+        setInterval(checkHealth, 30000);
+    </script>
+</body>
+
+</html>

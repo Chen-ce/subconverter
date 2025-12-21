@@ -99,3 +99,37 @@ function showConfirm(message, onConfirm, onCancel) {
         if (e.target === overlay) close(false);
     };
 }
+
+// 提示对话框
+function showAlert(message, onClose) {
+    const overlay = document.createElement('div');
+    overlay.className = 'alert-overlay';
+
+    const dialog = document.createElement('div');
+    dialog.className = 'alert-dialog';
+    dialog.innerHTML = `
+        <div class="alert-content">
+            <div class="alert-icon">ℹ️</div>
+            <div class="alert-message">${message}</div>
+        </div>
+        <div class="alert-actions">
+            <button class="btn btn-primary alert-ok">知道了</button>
+        </div>
+    `;
+
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+
+    setTimeout(() => overlay.classList.add('alert-show'), 10);
+
+    const close = () => {
+        overlay.classList.remove('alert-show');
+        setTimeout(() => overlay.remove(), 200);
+        if (onClose) onClose();
+    };
+
+    dialog.querySelector('.alert-ok').onclick = close;
+    overlay.onclick = (e) => {
+        if (e.target === overlay) close();
+    };
+}

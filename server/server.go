@@ -86,8 +86,10 @@ func (s *Server) setupRoutes() {
 		// 根路径模式：直接在根路径提供 Web 界面
 		s.engine.StaticFile("/", "./web/index.html")
 		s.engine.StaticFile("/configs.html", "./web/configs.html")
+		s.engine.StaticFile("/health.html", "./web/health.html")
 		s.engine.StaticFile("/app.js", "./web/app.js")
 		s.engine.StaticFile("/configs.js", "./web/configs.js")
+		s.engine.StaticFile("/toast.js", "./web/toast.js")
 		s.engine.StaticFile("/style.css", "./web/style.css")
 	} else {
 		// 自定义路径模式：在指定路径下提供 Web 界面

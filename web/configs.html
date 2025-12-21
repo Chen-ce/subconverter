@@ -9,10 +9,21 @@
 </head>
 
 <body>
-    <div class="container">
-        <header>
-            <h1>📋 配置管理</h1>
-            <p class="subtitle">管理你的订阅配置</p>
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <div class="bg-orb orb-3"></div>
+
+    <div class="page">
+        <header class="hero">
+            <div class="hero-top">
+                <span class="badge">Config Control</span>
+                <div class="status-pill">
+                    <span class="pulse"></span>
+                    <span>Secure · Manageable</span>
+                </div>
+            </div>
+            <h1>Configuration Hub</h1>
+            <p class="subtitle">集中管理订阅配置，生成可复用的短链接。</p>
         </header>
 
         <nav class="nav-tabs">
@@ -20,32 +31,40 @@
             <a href="configs.html" class="nav-tab active">配置管理</a>
         </nav>
 
-        <main>
-            <!-- API 密钥 -->
-            <section class="card">
-                <h2>🔐 API 密钥</h2>
-                <div class="form-group">
-                    <input type="password" id="apiKey" placeholder="请输入 API 密钥">
-                    <small>需要 API 密钥才能管理配置</small>
-                </div>
-            </section>
+        <main class="layout single">
+            <div class="column">
+                <!-- API 密钥 -->
+                <section class="card card-spotlight">
+                    <div class="card-title">
+                        <h2>API 密钥</h2>
+                        <span class="card-tag">Auth Token</span>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="apiKey" placeholder="请输入 API 密钥">
+                        <small>需要 API 密钥才能管理配置</small>
+                    </div>
+                </section>
 
-            <!-- 配置列表 -->
-            <section class="card">
-                <h2>📚 我的配置</h2>
-                <div class="actions" style="margin-bottom: 1rem;">
-                    <button class="btn btn-primary" onclick="showCreateModal()">
-                        <span class="btn-icon">➕</span>
-                        创建新配置
-                    </button>
-                    <button class="btn btn-secondary" onclick="loadConfigs()">
-                        <span class="btn-icon">🔄</span>
-                        刷新列表
-                    </button>
-                </div>
+                <!-- 配置列表 -->
+                <section class="card card-config">
+                    <div class="card-title">
+                        <h2>我的配置</h2>
+                        <span class="card-tag">Config Registry</span>
+                    </div>
+                    <div class="actions" style="margin-bottom: 1rem;">
+                        <button class="btn btn-primary" onclick="showCreateModal()">
+                            <span class="btn-icon">➕</span>
+                            创建新配置
+                        </button>
+                        <button class="btn btn-secondary" onclick="loadConfigs()">
+                            <span class="btn-icon">🔄</span>
+                            刷新列表
+                        </button>
+                    </div>
 
-                <div id="configsList"></div>
-            </section>
+                    <div id="configsList"></div>
+                </section>
+            </div>
         </main>
 
         <!-- 创建/编辑配置模态框 -->
@@ -127,7 +146,7 @@
                     服务状态
                 </a>
             </p>
-            <p class="footer-text">Powered by Subconverter</p>
+            <p class="footer-text">Subconverter Engine</p>
         </footer>
     </div>
 

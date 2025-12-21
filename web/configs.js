@@ -4,6 +4,18 @@ window.addEventListener('DOMContentLoaded', () => {
     // 不自动加载配置，让用户主动点击刷新或创建
 });
 
+function notify(type, message) {
+    if (typeof window.showAlert === 'function') {
+        window.showAlert(message);
+        return;
+    }
+    if (window.Toast && typeof Toast[type] === 'function') {
+        Toast[type](message);
+        return;
+    }
+    alert(message);
+}
+
 // 加载保存的 API 密钥
 function loadSavedApiKey() {
     const savedApiKey = localStorage.getItem('apiKey');
@@ -33,7 +45,7 @@ function getApiKeySilent() {
 function getApiKey() {
     const apiKey = document.getElementById('apiKey').value.trim();
     if (!apiKey) {
-        Toast.warning('请先输入 API 密钥');
+        notify('warning', '请先输入 API 密钥');
         return null;
     }
     saveApiKey();
@@ -58,7 +70,7 @@ async function loadConfigs() {
         });
 
         if (response.status === 401) {
-            Toast.error('API 密钥错误');
+            notify('error', 'API 密钥错误');
             return;
         }
 
@@ -69,7 +81,7 @@ async function loadConfigs() {
         const data = await response.json();
         displayConfigs(data.configs || []);
     } catch (error) {
-        Toast.error('加载配置失败: ' + error.message);
+        notify('error', '加载配置失败: ' + error.message);
     }
 }
 
@@ -159,7 +171,7 @@ async function editConfig(id) {
         document.getElementById('modalExclude').value = cfg.exclude || '';
         document.getElementById('configModal').style.display = 'flex';
     } catch (error) {
-        Toast.error('加载配置失败: ' + error.message);
+        notify('error', '加载配置失败: ' + error.message);
     }
 }
 
@@ -181,7 +193,7 @@ async function saveConfig() {
     const exclude = document.getElementById('modalExclude').value.trim();
 
     if (urls.length === 0) {
-        Toast.warning('请至少输入一个订阅链接');
+        notify('warning', '请至少输入一个订阅链接');
         return;
     }
 
@@ -213,10 +225,10 @@ async function saveConfig() {
 
         closeModal();
         loadConfigs();
-        Toast.success(id ? '配置已更新' : '配置已创建');
+        notify('success', id ? '配置已更新' : '配置已创建');
 
     } catch (error) {
-        Toast.error('保存配置失败: ' + error.message);
+        notify('error', '保存配置失败: ' + error.message);
     }
 }
 
@@ -239,10 +251,10 @@ async function deleteConfig(id) {
             }
 
             loadConfigs();
-            Toast.success('配置已删除');
+            notify('success', '配置已删除');
 
         } catch (error) {
-            Toast.error('删除配置失败: ' + error.message);
+            notify('error', '删除配置失败: ' + error.message);
         }
     });
 }
@@ -255,7 +267,7 @@ function closeModal() {
 // 复制 URL
 function copyUrl(url) {
     navigator.clipboard.writeText(url).then(() => {
-        Toast.success('已复制到剪贴板', 2000);
+        notify('success', '已复制到剪贴板');
     }).catch(() => {
         // 降级方案
         const input = document.createElement('input');
@@ -264,7 +276,7 @@ function copyUrl(url) {
         input.select();
         document.execCommand('copy');
         document.body.removeChild(input);
-        Toast.success('已复制到剪贴板', 2000);
+        notify('success', '已复制到剪贴板');
     });
 }
 

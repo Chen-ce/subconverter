@@ -82,6 +82,18 @@ function updateTemplateDescription() {
     }
 }
 
+function notify(type, message) {
+    if (typeof window.showAlert === 'function') {
+        window.showAlert(message);
+        return;
+    }
+    if (window.Toast && typeof Toast[type] === 'function') {
+        Toast[type](message);
+        return;
+    }
+    showError(message);
+}
+
 // 转换订阅
 async function convert() {
     const apiKey = document.getElementById('apiKey').value.trim();
@@ -96,12 +108,12 @@ async function convert() {
 
     // 验证输入
     if (!apiKey) {
-        showError('请输入 API 密钥');
+        notify('warning', '请输入 API 密钥');
         return;
     }
 
     if (!subscriptions && !nodes) {
-        showError('请至少输入一个订阅链接或节点');
+        notify('warning', '请至少输入一个订阅链接或节点');
         return;
     }
 
