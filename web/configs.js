@@ -70,7 +70,7 @@ async function fetchConfigList() {
     configList.innerHTML = '<div class="empty-state"><p>🚀 正在加载...</p></div>';
 
     try {
-        const response = await fetch('/api/config', {
+        const response = await fetch('/api/configs', {
             headers: {
                 'Authorization': `Bearer ${apiKey}`
             }
