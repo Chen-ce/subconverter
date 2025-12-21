@@ -102,3 +102,14 @@ curl "http://localhost:8080/api/configs" -H "Authorization: Bearer your-api-key"
 ## 📄 License
 
 MIT
+
+## 🙏 鸣谢与致敬
+
+本站点的核心功能与逻辑深受以下开源项目及贡献者的启发与支持，特此致谢：
+
+- **[ACL4SSR](https://github.com/ACL4SSR/ACL4SSR)**：提供了极富盛名的规则模板库，是本项目转换逻辑的核心基石。
+- **[subconverter](https://github.com/tindy2013/subconverter)**：作为同领域的先驱，为代理转换领域的通用标准提供了极具参考价值的范式。
+- **[Gin Framework](https://github.com/gin-gonic/gin)**：为本项目提供高性能的路由驱动。
+- **[Cobra](https://github.com/spf13/cobra)**：为命令行界面提供强力支持。
+
+同时感谢所有开源协议提供的依赖组件，让这个项目能够快速孵化。
