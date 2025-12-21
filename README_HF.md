@@ -7,70 +7,40 @@ sdk: docker
 pinned: false
 ---
 
-# Subconverter - 订阅转换工具
+# Subconverter - 极简订阅转换工具
 
-一个功能强大的代理订阅合并和转换工具，支持多种客户端格式。
+基于 Go 语言开发的高性能代理订阅合并与转换工具。支持多订阅合并、节点过滤、规则模板，并内置现代化的配置管理界面。
 
-## ✨ 功能特性
+## ✨ 核心特性
 
-- ✅ **多订阅合并** - 同时合并多个订阅源
-- ✅ **12 种客户端格式** - Clash、Surge、Sing-box、Quantumult X 等
-- ✅ **ACL4SSR 规则库** - 5 种在线规则模板
-- ✅ **短链接配置** - 可管理的订阅配置
-- ✅ **现代化 UI** - 优雅的 Web 界面
+- 🎯 **快速转换**：一键合并订阅与自定义节点，支持 12 种以上客户端格式。
+- 🔗 **持久化短链接**：默认开启短链接生成，支持在 `/` 根路径下直接管理。
+- 📱 **iOS 风格 UI**：美观现代的 Web 界面，支持移动端适配。
+- 🛠️ **全能编辑器**：支持配置反向解析，支持 API Key 自动拉取历史记录。
+- 🛡️ **安全可靠**：支持 API Key 认证，敏感信息不出现在 URL 参数中。
 
-## 🚀 快速开始
+## 🚀 使用指南
 
-### Web 界面
+### 1. 转换订阅
+在本 Space 首页：
+1. 输入 API Key。
+2. 填入订阅链接（每行一个）。
+3. 选择目标客户端（Clash, Surge, Sing-box 等）。
+4. 点击“转换”，默认将生成持久化短链接。
 
-直接访问本 Space 的 URL，使用 Web 界面进行订阅转换。
+### 2. 管理配置
+点击导航栏的“配置管理”：
+1. 输入 API Key 后，左侧会自动载入你所有的历史配置。
+2. 点击任意配置即可载入编辑器进行二次修改或删除。
 
-### API 调用
+## 🔑 认证信息
+本服务受 API Key 保护。如需在 API 或 Web 界面使用，请确保在 Header 或参数中携带正确的 Token。
 
-```bash
-# 订阅转换
-curl "https://YOUR-SPACE.hf.space/api/sub?target=clash&url=订阅链接&token=API_KEY"
+## 📜 规则支持
+- **ACL4SSR** 规则库全线支持
+- 支持 **Clash** 自定义模板
+- 自动适配 **Surge 2/3/4** 版本参数
 
-# 创建配置
-curl -X POST https://YOUR-SPACE.hf.space/api/config \
-  -H "Authorization: Bearer API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"urls":["订阅1"],"target":"clash","config":"acl4ssr_online_full"}'
-```
-
-## 🔑 API 密钥
-
-API 密钥已配置在 Space 的 Secrets 中。如需使用，请联系 Space 所有者获取。
-
-## 📖 文档
-
-- [完整文档](https://github.com/Chen-ce/subconverter)
-- [API 参考](https://github.com/Chen-ce/subconverter#api)
-- [部署指南](https://github.com/Chen-ce/subconverter/blob/main/HUGGINGFACE_DEPLOYMENT.md)
-
-## 🛠️ 支持的客户端
-
-- Clash / Clash for Windows
-- Sing-box
-- Surge 2/3/4
-- Quantumult X
-- Loon
-- Surfboard
-- V2Ray / Shadowsocks / SSR
-
-## 📚 规则模板
-
-- ACL4SSR 在线基础版
-- ACL4SSR 在线完整版
-- ACL4SSR 在线精简版
-- ACL4SSR 强化去广告版
-- ACL4SSR 无自动测速版
-
-## 🔗 相关链接
-
-- [GitHub 仓库](https://github.com/Chen-ce/subconverter)
-- [问题反馈](https://github.com/Chen-ce/subconverter/issues)
-
-## 📄 License
-
-MIT License
+## 🔗 链接
+- [GitHub 源码](https://github.com/Chen-ce/subconverter)
+- [完整部署文档](https://github.com/Chen-ce/subconverter/blob/main/HUGGINGFACE_DEPLOYMENT.md)

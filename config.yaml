@@ -1,7 +1,7 @@
 server:
   port: 8080
   host: 0.0.0.0
-  web_path: ""  # Web 界面路径，留空为根路径 /，设置为 /web 则访问 /web/
+  web_path: "${WEB_PATH}"  # Web 界面路径，默认为空（根路径 /）
 
 auth:
   enabled: true

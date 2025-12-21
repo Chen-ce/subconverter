@@ -1,216 +1,63 @@
-# 使用 GitHub Actions + 预构建镜像部署到 Hugging Face
+# Hugging Face Spaces 部署指南
 
-这种方式更高效，GitHub Actions 自动构建镜像，Hugging Face 直接使用。
+本项目原生支持 Hugging Face Spaces，使用 Docker SDK 部署，支持 GitHub Actions 自动构建并同步。
 
-## 优势
+## 🚀 推荐部署方式：GitHub Actions + 预构建镜像
 
-✅ **更快的部署** - Hugging Face 不需要重新编译  
-✅ **自动化** - 推送代码自动构建镜像  
-✅ **多平台支持** - 同时构建 amd64 和 arm64  
-✅ **缓存优化** - GitHub Actions 缓存加速构建  
+这种方式最稳定且更新最快。
 
-## 设置步骤
+### 1. 准备工作
+- 在 Hugging Face 创建一个 **New Space**。
+- 选择 **Docker** SDK。
+- 此时你会得到一个空的仓库链接（如 `https://huggingface.co/spaces/YOUR_USERNAME/subconverter`）。
 
-### 1. 配置 GitHub Secrets（可选 Docker Hub）
+### 2. 配置仓库
+将 `README_HF.md` 的内容复制到 Space 的 `README.md` 中。这会让 Hugging Face 识别它是 Docker 项目并渲染美观的介绍页面。
 
-如果要推送到 Docker Hub，在 GitHub 仓库设置中添加：
-
-1. 访问 `https://github.com/Chen-ce/subconverter/settings/secrets/actions`
-2. 添加 Secrets：
-   - `DOCKERHUB_USERNAME`: 你的 Docker Hub 用户名
-   - `DOCKERHUB_TOKEN`: Docker Hub Access Token
-
-**获取 Docker Hub Token：**
-1. 访问 https://hub.docker.com/settings/security
-2. 点击 **New Access Token**
-3. 复制生成的 token
-
-### 2. 推送代码触发构建
-
-```bash
-git add .github/workflows/docker-build.yml
-git commit -m "Add GitHub Actions workflow for Docker build"
-git push
-```
-
-GitHub Actions 会自动：
-- 构建 Docker 镜像
-- 推送到 GitHub Container Registry (ghcr.io)
-- 推送到 Docker Hub（如果配置了）
-
-### 3. 查看构建状态
-
-访问 `https://github.com/Chen-ce/subconverter/actions`
-
-### 4. 部署到 Hugging Face
-
-#### 方法 A: 使用 GitHub Container Registry（推荐，无需额外配置）
-
-1. 创建 Hugging Face Space（SDK: Docker）
-2. 克隆 Space 仓库：
-   ```bash
-   git clone https://huggingface.co/spaces/YOUR_USERNAME/subconverter
-   cd subconverter
-   ```
-
-3. 创建 `Dockerfile`：
-   ```dockerfile
-   FROM ghcr.io/chen-ce/subconverter:latest
-   
-   ENV PORT=7860
-   ENV HOST=0.0.0.0
-   ENV WEB_PATH=""
-   
-   EXPOSE 7860
-   
-   CMD ["./subconverter", "serve", "--port", "7860", "--host", "0.0.0.0"]
-   ```
-
-4. 创建 `README.md`（复制 `README_HF.md` 的内容）
-
-5. 推送到 Hugging Face：
-   ```bash
-   git add Dockerfile README.md
-   git commit -m "Deploy using pre-built image"
-   git push
-   ```
-
-#### 方法 B: 使用 Docker Hub
-
-如果你配置了 Docker Hub，Dockerfile 改为：
+### 3. 创建 Dockerfile
+在 Space 仓库中创建一个 `Dockerfile`：
 
 ```dockerfile
-FROM YOUR_DOCKERHUB_USERNAME/subconverter:latest
+# 使用 GitHub Actions 自动构建的镜像
+FROM ghcr.io/chen-ce/subconverter:latest
 
+# 配置环境变量
 ENV PORT=7860
 ENV HOST=0.0.0.0
+# 重要：确保 WEB_PATH 为空（根路径），以便 Space 域名直接访问
 ENV WEB_PATH=""
 
 EXPOSE 7860
 
+# 启动命令
 CMD ["./subconverter", "serve", "--port", "7860", "--host", "0.0.0.0"]
 ```
 
-### 5. 设置 API 密钥
+### 4. 设置 Secrets (必须)
+在 Hugging Face Space 的 **Settings** -> **Repository secrets** 中添加：
 
-在 Hugging Face Space Settings → Repository secrets：
-- Name: `API_KEY`
-- Value: 你的 API 密钥
+- `API_KEY`: 访问 Web 页面和管理历史配置所需的密钥。建议使用 `openssl rand -hex 16` 生成。
 
-### 6. 访问你的 Space
+### 5. 访问服务
+稍等 1-2 分钟，构建完成后即可通过 Space 域名预览：
+`https://YOUR_USERNAME-subconverter.hf.space/`
 
-```
-https://YOUR_USERNAME-subconverter.hf.space/
-```
+---
 
-## 更新流程
+## 🛠️ 运维与更新
 
-当你更新代码时：
+### 如何同步最新功能？
+当我的主仓库（GitHub）有代码更新时，GitHub Actions 会自动构建新的镜像。
+你只需要刷新你的 Space 或执行 **Factory reboot** 即可拉取最新代码：
 
-```bash
-# 1. 推送到 GitHub
-git add .
-git commit -m "Update features"
-git push
+1. 进入 Space 的 **Settings**。
+2. 找到 **Danger Zone**。
+3. 点击 **Factory reboot**。
 
-# 2. GitHub Actions 自动构建新镜像
+### 如何持久化数据？
+Hugging Face Spaces 的文件系统默认是**非持久化**的（虽然项目使用了 JSON 文件存储配置，但重启即丢）。
+- 如果你需要永久保存短链接配置，建议使用 Hugging Face 提供的 **Persistent Storage** 云盘挂载到 `/app/data`。
+- 或者定期备份 `data/config_storage.json`。
 
-# 3. 在 Hugging Face Space 中触发重新部署
-# 访问 Space Settings → Factory reboot
-# 或者推送一个空提交：
-cd huggingface-space
-git commit --allow-empty -m "Trigger rebuild"
-git push
-```
-
-## 镜像标签
-
-GitHub Actions 会创建多个标签：
-
-- `latest` - 最新的 main 分支构建
-- `main` - main 分支
-- `sha-xxxxxx` - 特定 commit
-- `v1.0.0` - 版本标签（如果打了 tag）
-
-在 Hugging Face 中可以指定具体版本：
-
-```dockerfile
-# 使用特定版本
-FROM ghcr.io/chen-ce/subconverter:v1.0.0
-
-# 使用特定 commit
-FROM ghcr.io/chen-ce/subconverter:sha-abc1234
-```
-
-## 故障排查
-
-### GitHub Actions 构建失败
-
-1. 检查 Actions 日志
-2. 确保 Dockerfile 正确
-3. 检查 Go 依赖是否完整
-
-### Hugging Face 拉取镜像失败
-
-**GitHub Container Registry 是私有的？**
-
-默认情况下，GitHub Container Registry 的镜像是私有的。需要设置为公开：
-
-1. 访问 `https://github.com/users/Chen-ce/packages/container/subconverter/settings`
-2. 在 **Danger Zone** 中点击 **Change visibility**
-3. 选择 **Public**
-
-或者在 GitHub Actions 中添加权限设置（已包含在 workflow 中）。
-
-### 查看可用镜像
-
-**GitHub Container Registry:**
-```bash
-# 查看所有标签
-curl https://ghcr.io/v2/chen-ce/subconverter/tags/list
-```
-
-**Docker Hub:**
-```bash
-# 访问
-https://hub.docker.com/r/YOUR_USERNAME/subconverter/tags
-```
-
-## 性能对比
-
-| 方式 | 构建时间 | 部署时间 | 总时间 |
-|------|---------|---------|--------|
-| **直接构建** | - | ~5-10分钟 | ~5-10分钟 |
-| **预构建镜像** | ~3-5分钟 | ~30秒 | ~3.5-5.5分钟 |
-
-使用预构建镜像，Hugging Face 部署时间从 5-10 分钟缩短到 30 秒！
-
-## 高级配置
-
-### 多阶段构建优化
-
-当前 Dockerfile 已经使用多阶段构建，最终镜像大小约 20-30 MB。
-
-### 自动更新
-
-可以设置 GitHub Actions 定时触发：
-
-```yaml
-on:
-  schedule:
-    - cron: '0 0 * * 0'  # 每周日构建一次
-```
-
-### 构建通知
-
-添加构建状态徽章到 README：
-
-```markdown
-![Docker Build](https://github.com/Chen-ce/subconverter/actions/workflows/docker-build.yml/badge.svg)
-```
-
-## 相关链接
-
-- [GitHub Container Registry 文档](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
-- [Docker Hub](https://hub.docker.com/)
-- [Hugging Face Spaces Docker SDK](https://huggingface.co/docs/hub/spaces-sdks-docker)
+## ❓ 常见问题
+详见 [HF_TROUBLESHOOTING.md](HF_TROUBLESHOOTING.md)

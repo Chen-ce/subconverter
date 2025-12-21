@@ -1,123 +1,53 @@
 # Hugging Face 部署故障排查
 
-## 问题：访问根路径返回 404
+## 问题：无法加载 Web 界面 / 404 错误
 
-### 可能原因
+### 1. 检查环境变量 `WEB_PATH`
+**表现**：访问域名后显示 "404 page not found" 或页面样式丢失。
+**原因**：在 Hugging Face Spaces 中，Space 域名通常直接映射到容器的根路径。如果你设置了 `WEB_PATH=/web`，你必须访问 `https://space-url/web/` 才能看到界面。
+**建议**：
+- 在 Space 的 **Settings** -> **Repository secrets** 中确保 `WEB_PATH` 留空。
+- 或者在 `Dockerfile` 中定义 `ENV WEB_PATH=""`。
 
-1. **镜像未公开** - GitHub Container Registry 镜像默认是私有的
-2. **使用旧镜像** - HF 缓存了旧版本镜像
-3. **路由问题** - 代码路由配置有误
+### 2. 静态文件未加载
+**表现**：页面显示 HTML 但没有样式（style.css 404）或脚本不工作（app.js 404）。
+**原因**：静态文件路径与 `WEB_PATH` 设置不匹配。
+**解决**：确保 `config.yaml` 里的 `web_path` 与环境变量一致。本项目支持自动展开 `${WEB_PATH}`，但建议直接留空以适配根路径部署。
 
-### 解决步骤
+### 3. API Key (Token) 错误
+**表现**：转换时报错 "请输入 API 密钥" 或 "身份验证失败"。
+**解决**：
+- 确保你已在 Space 的 **Settings** -> **Secrets** 中添加了 `API_KEY`。
+- 确认你在 Web 界面输入的密钥与 Secret 里的 Value 完全一致。
 
-#### 1. 设置镜像为公开（重要！）
+### 4. 镜像拉取权限 (Unauthorized)
+**表现**：Hugging Face 部署日志显示 `pull access denied`。
+**原因**：GitHub Container Registry (ghcr.io) 镜像默认是私有的。
+**解决**：
+- 访问：`https://github.com/users/YOUR_USERNAME/packages/container/subconverter/settings`
+- 将 **Visibility** 修改为 **Public**。
 
-访问：https://github.com/users/Chen-ce/packages/container/subconverter/settings
+### 5. 数据丢失
+**表现**：重启 Space 后，之前在配置页创建的正向/短链接配置消失了。
+**原因**：Hugging Face Space 的容器文件系统是非持久化的。
+**建议**：
+- 在 Space Settings 中申请 **Persistent Storage** 并挂载到 `/app/data`。
+- 或者将 `data` 目录下的 `config_storage.json` 导出备份。
 
-在 **Danger Zone** 中：
-1. 点击 **Change visibility**
-2. 选择 **Public**
-3. 输入仓库名确认
+---
 
-#### 2. 验证镜像可访问
-
-```bash
-# 尝试拉取镜像
-docker pull ghcr.io/chen-ce/subconverter:latest
-
-# 如果失败，说明镜像是私有的或不存在
-```
-
-#### 3. 检查 HF Space 日志
-
-1. 访问：https://huggingface.co/spaces/chence0918/subconverter
-2. 点击 **Logs** 标签
-3. 查看是否有错误信息
-
-常见错误：
-- `Error: pull access denied` - 镜像是私有的
-- `404 page not found` - 路由问题
-- `connection refused` - 服务未启动
-
-#### 4. 强制重新拉取镜像
-
-在 HF Space 中：
+## 调试命令
 
 ```bash
-# 方法 A: 修改 Dockerfile 强制重新拉取
-# 在 FROM 行添加特定标签
-FROM ghcr.io/chen-ce/subconverter:sha-xxxxxx
+# 测试接口是否存活
+curl -v https://YOUR_SPACE-subconverter.hf.space/health
 
-# 方法 B: 空提交触发重建
-git commit --allow-empty -m "Force rebuild"
-git push
+# 测试订阅转换端点
+curl -v https://YOUR_SPACE-subconverter.hf.space/api/sub
+
+# 手动核对配置路径
+# 如果你设置了 WEB_PATH=/foo, 那么你应该能访问：
+# https://YOUR_SPACE-subconverter.hf.space/foo/index.html
 ```
 
-#### 5. 临时解决方案：使用完整构建
-
-如果镜像访问有问题，可以暂时使用完整构建：
-
-```dockerfile
-FROM golang:1.21-alpine AS builder
-WORKDIR /app
-COPY go.mod go.sum ./
-RUN go mod download
-COPY . .
-RUN CGO_ENABLED=0 go build -o subconverter
-
-FROM alpine:latest
-RUN apk --no-cache add ca-certificates
-WORKDIR /app
-COPY --from=builder /app/subconverter .
-COPY --from=builder /app/web ./web
-COPY --from=builder /app/templates ./templates
-COPY --from=builder /app/config.yaml .
-
-ENV PORT=7860
-EXPOSE 7860
-CMD ["./subconverter", "serve", "--port", "7860", "--host", "0.0.0.0"]
-```
-
-### 验证本地构建
-
-```bash
-# 1. 构建镜像
-docker build -t subconverter-test .
-
-# 2. 运行容器
-docker run -p 7860:7860 -e API_KEY=test123 subconverter-test
-
-# 3. 测试访问
-curl http://localhost:7860/
-curl http://localhost:7860/health
-```
-
-### 调试命令
-
-```bash
-# 查看 HF Space 实时日志
-# 在 Space 页面的 Logs 标签
-
-# 检查镜像标签
-curl https://ghcr.io/v2/chen-ce/subconverter/tags/list
-
-# 测试路由
-curl -v https://chence0918-subconverter.hf.space/
-curl -v https://chence0918-subconverter.hf.space/health
-curl -v https://chence0918-subconverter.hf.space/api/sub
-```
-
-### 当前状态检查清单
-
-- [ ] GitHub Actions 构建成功
-- [ ] 镜像设置为公开
-- [ ] HF Space Dockerfile 正确
-- [ ] HF Space 成功拉取镜像
-- [ ] 服务在容器内启动
-- [ ] 根路径返回 200
-
-### 联系支持
-
-如果以上都无法解决，可以：
-1. 在 HF Space 的 Community 标签发帖
-2. 查看 HF Docs: https://huggingface.co/docs/hub/spaces-sdks-docker
+如果仍有问题，请查看 Space 顶部的 **Logs** 标签获取 Go 服务运行时的具体日志。
