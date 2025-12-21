@@ -1,0 +1,65 @@
+port: 7890
+socks-port: 7891
+allow-lan: false
+mode: rule
+log-level: info
+external-controller: 127.0.0.1:9090
+
+dns:
+  enable: true
+  listen: 0.0.0.0:53
+  enhanced-mode: fake-ip
+  nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+  fallback:
+    - 8.8.8.8
+    - 1.1.1.1
+
+proxy-groups:
+  - name: 🚀 节点选择
+    type: select
+    proxies:
+      - ♻️ 自动选择
+      - 🎯 全球直连
+      - {{proxies}}
+  
+  - name: ♻️ 自动选择
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    proxies:
+      - {{proxies}}
+  
+  - name: 🎯 全球直连
+    type: select
+    proxies:
+      - DIRECT
+
+rules:
+  # 局域网直连
+  - RULE-SET,https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt,DIRECT
+  - RULE-SET,https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/private.txt,DIRECT
+  
+  # 常用服务代理
+  - RULE-SET,https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/google.txt,🚀 节点选择
+  - RULE-SET,https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt,🚀 节点选择
+  - RULE-SET,https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt,🚀 节点选择
+  
+  # Apple & iCloud
+  - RULE-SET,https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/icloud.txt,🎯 全球直连
+  - RULE-SET,https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/apple.txt,🎯 全球直连
+  
+  # 国内直连
+  - RULE-SET,https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt,🎯 全球直连
+  - RULE-SET,https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt,🎯 全球直连
+  
+  # Telegram
+  - RULE-SET,https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/telegramcidr.txt,🚀 节点选择
+  
+  # GeoIP 规则
+  - GEOIP,LAN,DIRECT
+  - GEOIP,CN,🎯 全球直连
+  
+  # 兜底规则
+  - MATCH,🚀 节点选择

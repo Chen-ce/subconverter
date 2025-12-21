@@ -1,0 +1,34 @@
+# Binaries
+subconverter
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output files
+*.out
+*.txt
+*.yaml
+!config.yaml
+!templates/**/*.yaml
+config.local.yaml
+
+# Go workspace file
+go.work
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.env
