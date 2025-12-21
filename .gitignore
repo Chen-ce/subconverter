@@ -30,5 +30,8 @@ go.work
 .DS_Store
 Thumbs.db
 
-# Docker
+# Environment
 .env
+
+# Data
+data/

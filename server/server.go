@@ -36,6 +36,12 @@ func New(cfg *config.Config) *Server {
 		config: cfg,
 	}
 	
+	// 初始化配置存储
+	dataDir := "./data/configs"
+	if err := handler.InitConfigStorage(dataDir); err != nil {
+		fmt.Printf("Warning: failed to initialize config storage: %v\n", err)
+	}
+	
 	s.setupRoutes()
 	
 	return s
@@ -49,12 +55,23 @@ func (s *Server) setupRoutes() {
 	// 健康检查（无需认证）
 	s.engine.GET("/health", handler.Health)
 	
+	// 短链接订阅（需要认证）
+	s.engine.GET("/sub/:id", middleware.Auth(), handler.ConvertByID)
+	
 	// API 路由（需要认证）
 	api := s.engine.Group("/")
 	api.Use(middleware.Auth())
 	{
+		// 订阅转换
 		api.GET("/sub", handler.Convert)
 		api.GET("/templates", handler.Templates)
+		
+		// 配置管理
+		api.POST("/api/config", handler.CreateConfig)
+		api.GET("/api/config/:id", handler.GetConfig)
+		api.PUT("/api/config/:id", handler.UpdateConfig)
+		api.DELETE("/api/config/:id", handler.DeleteConfig)
+		api.GET("/api/configs", handler.ListConfigs)
 	}
 }
 

@@ -137,9 +137,13 @@ func (e *QuantumultXExporter) trojanToQuantumultX(node *parser.Node) string {
 // ssToQuantumultX Shadowsocks 转 Quantumult X
 func (e *QuantumultXExporter) ssToQuantumultX(node *parser.Node) string {
 	// shadowsocks=server:port, method=aes-256-gcm, password=pwd, tag=name
+	method := node.Method
+	if method == "" {
+		method = node.Cipher
+	}
 	parts := []string{
 		fmt.Sprintf("shadowsocks=%s:%d", node.Server, node.Port),
-		fmt.Sprintf("method=%s", node.Cipher),
+		fmt.Sprintf("method=%s", method),
 		fmt.Sprintf("password=%s", node.Password),
 	}
 	

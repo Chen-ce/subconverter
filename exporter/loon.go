@@ -144,11 +144,15 @@ func (e *LoonExporter) trojanToLoon(node *parser.Node) string {
 // ssToLoon Shadowsocks 转 Loon
 func (e *LoonExporter) ssToLoon(node *parser.Node) string {
 	// name = ss,server,port,method,"password"
+	method := node.Method
+	if method == "" {
+		method = node.Cipher
+	}
 	parts := []string{
 		node.Name + " = ss",
 		node.Server,
 		fmt.Sprintf("%d", node.Port),
-		node.Cipher,
+		method,
 		fmt.Sprintf("\"%s\"", node.Password),
 	}
 	

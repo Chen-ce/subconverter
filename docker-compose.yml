@@ -9,8 +9,9 @@ services:
     environment:
       - API_KEY=${API_KEY}
     volumes:
-      - ./config.yaml:/root/config.yaml:ro
-      - ./templates:/root/templates:ro
+      - ./config.yaml:/app/config.yaml
+      - ./templates:/app/templates
+      - ./data:/app/data  # 配置持久化
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]

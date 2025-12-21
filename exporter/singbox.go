@@ -127,6 +127,9 @@ func (e *SingboxExporter) vmessToOutbound(node *parser.Node) map[string]interfac
 		if node.SNI != "" {
 			outbound["tls"].(map[string]interface{})["server_name"] = node.SNI
 		}
+		if node.SkipCertVerify {
+			outbound["tls"].(map[string]interface{})["insecure"] = true
+		}
 	}
 	
 	if node.Network == "ws" {
@@ -136,6 +139,14 @@ func (e *SingboxExporter) vmessToOutbound(node *parser.Node) map[string]interfac
 		}
 		if len(node.WSHeaders) > 0 {
 			outbound["transport"].(map[string]interface{})["headers"] = node.WSHeaders
+		}
+	}
+	if node.Network == "grpc" {
+		outbound["transport"] = map[string]interface{}{
+			"type": "grpc",
+		}
+		if node.GRPCServiceName != "" {
+			outbound["transport"].(map[string]interface{})["service_name"] = node.GRPCServiceName
 		}
 	}
 	
@@ -159,10 +170,31 @@ func (e *SingboxExporter) vlessToOutbound(node *parser.Node) map[string]interfac
 		if node.SNI != "" {
 			outbound["tls"].(map[string]interface{})["server_name"] = node.SNI
 		}
+		if node.SkipCertVerify {
+			outbound["tls"].(map[string]interface{})["insecure"] = true
+		}
 	}
 	
 	if node.Flow != "" {
 		outbound["flow"] = node.Flow
+	}
+	
+	if node.Network == "ws" {
+		outbound["transport"] = map[string]interface{}{
+			"type": "ws",
+			"path": node.WSPath,
+		}
+		if len(node.WSHeaders) > 0 {
+			outbound["transport"].(map[string]interface{})["headers"] = node.WSHeaders
+		}
+	}
+	if node.Network == "grpc" {
+		outbound["transport"] = map[string]interface{}{
+			"type": "grpc",
+		}
+		if node.GRPCServiceName != "" {
+			outbound["transport"].(map[string]interface{})["service_name"] = node.GRPCServiceName
+		}
 	}
 	
 	return outbound
@@ -190,6 +222,24 @@ func (e *SingboxExporter) trojanToOutbound(node *parser.Node) map[string]interfa
 		}
 	}
 	
+	if node.Network == "ws" {
+		outbound["transport"] = map[string]interface{}{
+			"type": "ws",
+			"path": node.WSPath,
+		}
+		if len(node.WSHeaders) > 0 {
+			outbound["transport"].(map[string]interface{})["headers"] = node.WSHeaders
+		}
+	}
+	if node.Network == "grpc" {
+		outbound["transport"] = map[string]interface{}{
+			"type": "grpc",
+		}
+		if node.GRPCServiceName != "" {
+			outbound["transport"].(map[string]interface{})["service_name"] = node.GRPCServiceName
+		}
+	}
+	
 	return outbound
 }
 
@@ -200,8 +250,11 @@ func (e *SingboxExporter) ssToOutbound(node *parser.Node) map[string]interface{}
 		"tag":      node.Name,
 		"server":   node.Server,
 		"server_port": node.Port,
-		"method":   node.Cipher,
+		"method":   node.Method,
 		"password": node.Password,
+	}
+	if outbound["method"] == "" {
+		outbound["method"] = node.Cipher
 	}
 	
 	return outbound

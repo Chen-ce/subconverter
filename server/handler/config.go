@@ -1,0 +1,199 @@
+package handler
+
+import (
+	"net/http"
+	"time"
+	
+	"github.com/Chen-ce/subconverter/storage"
+	"github.com/gin-gonic/gin"
+)
+
+var configStorage *storage.ConfigStorage
+
+// InitConfigStorage 初始化配置存储
+func InitConfigStorage(dataDir string) error {
+	var err error
+	configStorage, err = storage.NewConfigStorage(dataDir)
+	return err
+}
+
+// CreateConfig 创建配置
+func CreateConfig(c *gin.Context) {
+	var req struct {
+		URLs    []string `json:"urls" binding:"required"`
+		Nodes   []string `json:"nodes"`
+		Target  string   `json:"target" binding:"required"`
+		Config  string   `json:"config"`
+		Include string   `json:"include"`
+		Exclude string   `json:"exclude"`
+	}
+	
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	
+	// 生成 ID
+	id, err := configStorage.GenerateID()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate ID"})
+		return
+	}
+	
+	// 创建配置
+	cfg := &storage.SubscriptionConfig{
+		ID:        id,
+		URLs:      req.URLs,
+		Nodes:     req.Nodes,
+		Target:    req.Target,
+		Config:    req.Config,
+		Include:   req.Include,
+		Exclude:   req.Exclude,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Version:   1,
+	}
+	
+	// 保存
+	if err := configStorage.Save(cfg); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save config"})
+		return
+	}
+	
+	// 返回结果
+	c.JSON(http.StatusCreated, gin.H{
+		"id":  id,
+		"url": c.Request.Host + "/sub/" + id,
+	})
+}
+
+// GetConfig 获取配置
+func GetConfig(c *gin.Context) {
+	id := c.Param("id")
+	
+	cfg, err := configStorage.Load(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "config not found"})
+		return
+	}
+	
+	c.JSON(http.StatusOK, cfg)
+}
+
+// UpdateConfig 更新配置
+func UpdateConfig(c *gin.Context) {
+	id := c.Param("id")
+	
+	// 检查配置是否存在
+	cfg, err := configStorage.Load(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "config not found"})
+		return
+	}
+	
+	// 解析请求
+	var req struct {
+		URLs    []string `json:"urls"`
+		Nodes   []string `json:"nodes"`
+		Target  string   `json:"target"`
+		Config  string   `json:"config"`
+		Include string   `json:"include"`
+		Exclude string   `json:"exclude"`
+	}
+	
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	
+	// 更新字段
+	if len(req.URLs) > 0 {
+		cfg.URLs = req.URLs
+	}
+	cfg.Nodes = req.Nodes // 允许清空
+	if req.Target != "" {
+		cfg.Target = req.Target
+	}
+	cfg.Config = req.Config
+	cfg.Include = req.Include
+	cfg.Exclude = req.Exclude
+	
+	// 保存
+	if err := configStorage.Save(cfg); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update config"})
+		return
+	}
+	
+	c.JSON(http.StatusOK, cfg)
+}
+
+// DeleteConfig 删除配置
+func DeleteConfig(c *gin.Context) {
+	id := c.Param("id")
+	
+	if err := configStorage.Delete(id); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "config not found"})
+		return
+	}
+	
+	c.JSON(http.StatusOK, gin.H{"message": "config deleted"})
+}
+
+// ListConfigs 列出所有配置
+func ListConfigs(c *gin.Context) {
+	configs, err := configStorage.List()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list configs"})
+		return
+	}
+	
+	c.JSON(http.StatusOK, gin.H{"configs": configs})
+}
+
+// ConvertByID 通过 ID 转换订阅
+func ConvertByID(c *gin.Context) {
+	id := c.Param("id")
+	
+	// 加载配置
+	cfg, err := configStorage.Load(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "config not found"})
+		return
+	}
+	
+	// 设置查询参数（复用现有的 Convert 逻辑）
+	c.Request.URL.RawQuery = ""
+	q := c.Request.URL.Query()
+	
+	// 从配置设置参数
+	q.Set("target", cfg.Target)
+	if len(cfg.URLs) > 0 {
+		urlStr := ""
+		for i, u := range cfg.URLs {
+			if i > 0 {
+				urlStr += "|"
+			}
+			urlStr += u
+		}
+		q.Set("url", urlStr)
+	}
+	
+	for _, node := range cfg.Nodes {
+		q.Add("node", node)
+	}
+	
+	if cfg.Config != "" {
+		q.Set("config", cfg.Config)
+	}
+	if cfg.Include != "" {
+		q.Set("include", cfg.Include)
+	}
+	if cfg.Exclude != "" {
+		q.Set("exclude", cfg.Exclude)
+	}
+	
+	c.Request.URL.RawQuery = q.Encode()
+	
+	// 调用原有的转换逻辑
+	Convert(c)
+}

@@ -211,6 +211,9 @@ func nodeToClashProxy(node *parser.Node) map[string]interface{} {
 		proxy["uuid"] = node.UUID
 		proxy["alterId"] = node.AlterId
 		proxy["cipher"] = "auto"
+		if node.Cipher != "" {
+			proxy["cipher"] = node.Cipher
+		}
 		if node.Network != "" {
 			proxy["network"] = node.Network
 		}
@@ -219,13 +222,29 @@ func nodeToClashProxy(node *parser.Node) map[string]interface{} {
 			if node.SNI != "" {
 				proxy["servername"] = node.SNI
 			}
+			if node.SkipCertVerify {
+				proxy["skip-cert-verify"] = true
+			}
 		}
-		if node.Network == "ws" && node.WSPath != "" {
-			proxy["ws-opts"] = map[string]interface{}{
-				"path": node.WSPath,
+		if node.Network == "ws" {
+			wsOpts := map[string]interface{}{}
+			if node.WSPath != "" {
+				wsOpts["path"] = node.WSPath
 			}
 			if len(node.WSHeaders) > 0 {
-				proxy["ws-opts"].(map[string]interface{})["headers"] = node.WSHeaders
+				wsOpts["headers"] = node.WSHeaders
+			}
+			if len(wsOpts) > 0 {
+				proxy["ws-opts"] = wsOpts
+			}
+		}
+		if node.Network == "grpc" {
+			grpcOpts := map[string]interface{}{}
+			if node.GRPCServiceName != "" {
+				grpcOpts["grpc-service-name"] = node.GRPCServiceName
+			}
+			if len(grpcOpts) > 0 {
+				proxy["grpc-opts"] = grpcOpts
 			}
 		}
 		
@@ -240,6 +259,33 @@ func nodeToClashProxy(node *parser.Node) map[string]interface{} {
 		}
 		if node.TLS {
 			proxy["tls"] = true
+			if node.SNI != "" {
+				proxy["servername"] = node.SNI
+			}
+			if node.SkipCertVerify {
+				proxy["skip-cert-verify"] = true
+			}
+		}
+		if node.Network == "ws" {
+			wsOpts := map[string]interface{}{}
+			if node.WSPath != "" {
+				wsOpts["path"] = node.WSPath
+			}
+			if len(node.WSHeaders) > 0 {
+				wsOpts["headers"] = node.WSHeaders
+			}
+			if len(wsOpts) > 0 {
+				proxy["ws-opts"] = wsOpts
+			}
+		}
+		if node.Network == "grpc" {
+			grpcOpts := map[string]interface{}{}
+			if node.GRPCServiceName != "" {
+				grpcOpts["grpc-service-name"] = node.GRPCServiceName
+			}
+			if len(grpcOpts) > 0 {
+				proxy["grpc-opts"] = grpcOpts
+			}
 		}
 		
 	case parser.ProxyTypeTrojan:
@@ -248,18 +294,68 @@ func nodeToClashProxy(node *parser.Node) map[string]interface{} {
 		if node.SNI != "" {
 			proxy["sni"] = node.SNI
 		}
+		if node.SkipCertVerify {
+			proxy["skip-cert-verify"] = true
+		}
+		if node.Network != "" && node.Network != "tcp" {
+			proxy["network"] = node.Network
+		}
+		if node.Network == "ws" {
+			wsOpts := map[string]interface{}{}
+			if node.WSPath != "" {
+				wsOpts["path"] = node.WSPath
+			}
+			if len(node.WSHeaders) > 0 {
+				wsOpts["headers"] = node.WSHeaders
+			}
+			if len(wsOpts) > 0 {
+				proxy["ws-opts"] = wsOpts
+			}
+		}
+		if node.Network == "grpc" {
+			grpcOpts := map[string]interface{}{}
+			if node.GRPCServiceName != "" {
+				grpcOpts["grpc-service-name"] = node.GRPCServiceName
+			}
+			if len(grpcOpts) > 0 {
+				proxy["grpc-opts"] = grpcOpts
+			}
+		}
 		
 	case parser.ProxyTypeShadowsocks:
 		proxy["type"] = "ss"
-		proxy["cipher"] = node.Method
+		method := node.Method
+		if method == "" {
+			method = node.Cipher
+		}
+		proxy["cipher"] = method
 		proxy["password"] = node.Password
+		if node.UDP {
+			proxy["udp"] = true
+		}
+		if node.Plugin != "" {
+			proxy["plugin"] = node.Plugin
+			if len(node.PluginOpts) > 0 {
+				proxy["plugin-opts"] = node.PluginOpts
+			}
+		}
 		
 	case parser.ProxyTypeShadowsocksR:
 		proxy["type"] = "ssr"
-		proxy["cipher"] = node.Method
+		method := node.Method
+		if method == "" {
+			method = node.Cipher
+		}
+		proxy["cipher"] = method
 		proxy["password"] = node.Password
 		proxy["protocol"] = node.Protocol
 		proxy["obfs"] = node.Obfs
+		if node.ProtocolParam != "" {
+			proxy["protocol-param"] = node.ProtocolParam
+		}
+		if node.ObfsParam != "" {
+			proxy["obfs-param"] = node.ObfsParam
+		}
 	}
 	
 	return proxy
