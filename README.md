@@ -175,6 +175,7 @@ services:
       - "8080:8080"
     environment:
       - API_KEY=${API_KEY}
+      - WEB_PATH=${WEB_PATH:-}  # 可选，Web 界面路径
     volumes:
       - ./config.yaml:/app/config.yaml
       - ./templates:/app/templates
@@ -188,6 +189,128 @@ services:
 # .env
 API_KEY=your-secret-api-key-change-this
 PORT=8080
+WEB_PATH=  # 留空为根路径 /，设置为 /web 则访问 /web/
+```
+
+## ⚙️ 配置详解
+
+### config.yaml 完整配置
+
+```yaml
+server:
+  port: 8080
+  host: 0.0.0.0
+  web_path: ""  # Web 界面路径前缀
+  # 留空 = 根路径访问 (http://server/)
+  # "/web" = /web 路径访问 (http://server/web/)
+  # "/dashboard" = 自定义路径 (http://server/dashboard/)
+
+auth:
+  enabled: true
+  api_keys:
+    - ${API_KEY}  # 从环境变量读取
+    # - "another-key"  # 可以添加多个密钥
+
+templates:
+  dir: ./templates
+  default: default
+
+clash:
+  default_rules: default
+```
+
+### 环境变量说明
+
+| 变量 | 说明 | 默认值 | 示例 |
+|------|------|--------|------|
+| `API_KEY` | API 密钥（必需） | - | `openssl rand -hex 32` |
+| `PORT` | 服务器端口 | `8080` | `9090` |
+| `HOST` | 监听地址 | `0.0.0.0` | `127.0.0.1` |
+| `WEB_PATH` | Web 界面路径 | `""` (根路径) | `/web` 或 `/dashboard` |
+
+### Web 路径配置详解
+
+**场景 1: Hugging Face Spaces / Vercel（根路径）**
+```yaml
+server:
+  web_path: ""
+```
+访问：`https://your-app.hf.space/`
+
+**场景 2: 传统部署（/web 路径）**
+```yaml
+server:
+  web_path: "/web"
+```
+访问：`http://localhost:8080/web/`
+
+**场景 3: 自定义路径**
+```yaml
+server:
+  web_path: "/dashboard"
+```
+访问：`http://localhost:8080/dashboard/`
+
+**注意**：无论 `web_path` 如何设置，API 路径始终为：
+- `/api/sub` - 订阅转换
+- `/api/config` - 配置管理
+- `/sub/:id` - 短链接
+
+### Docker 部署示例
+
+**示例 1: 默认配置（根路径）**
+```bash
+docker run -d \
+  -p 8080:8080 \
+  -e API_KEY=your-secret-key \
+  -v $(pwd)/data:/app/data \
+  --name subconverter \
+  subconverter:latest
+
+# 访问: http://localhost:8080/
+```
+
+**示例 2: 自定义 Web 路径**
+```bash
+docker run -d \
+  -p 8080:8080 \
+  -e API_KEY=your-secret-key \
+  -e WEB_PATH=/web \
+  -v $(pwd)/data:/app/data \
+  --name subconverter \
+  subconverter:latest
+
+# 访问: http://localhost:8080/web/
+```
+
+**示例 3: Hugging Face Spaces**
+```dockerfile
+# Dockerfile
+FROM golang:1.21-alpine AS builder
+WORKDIR /app
+COPY . .
+RUN go build -o subconverter
+
+FROM alpine:latest
+WORKDIR /app
+COPY --from=builder /app/subconverter .
+COPY --from=builder /app/web ./web
+COPY --from=builder /app/templates ./templates
+COPY --from=builder /app/config.yaml .
+
+ENV PORT=7860
+ENV WEB_PATH=""
+EXPOSE 7860
+
+CMD ["./subconverter", "serve"]
+```
+
+```yaml
+# config.yaml for Hugging Face
+server:
+  port: 7860  # Hugging Face 默认端口
+  host: 0.0.0.0
+  web_path: ""  # 根路径访问
 ```
 
 ## 🔒 安全建议
