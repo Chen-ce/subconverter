@@ -44,25 +44,18 @@ function updateConfigVisibility() {
     const configGroup = document.getElementById('configGroup');
     const configHint = document.getElementById('configHint');
 
-    // 支持规则配置的格式
-    const supportsConfig = ['clash', 'singbox', 'surge&ver=2', 'surge&ver=3', 'surge&ver=4',
-        'surfboard', 'quanx', 'quan', 'loon'];
+    const supportsConfig = format === 'clash';
 
-    if (supportsConfig.some(f => format.startsWith(f) || format === f)) {
+    if (supportsConfig) {
         configGroup.style.display = 'block';
-
-        // 根据格式更新提示
-        if (format.includes('surge') || format === 'surfboard') {
-            configHint.textContent = '适用于 Surge/Surfboard 的规则配置';
-        } else if (format === 'quanx' || format === 'quan') {
-            configHint.textContent = '适用于 Quantumult (X) 的规则配置';
-        } else if (format === 'loon') {
-            configHint.textContent = '适用于 Loon 的规则配置';
-        } else {
-            configHint.textContent = 'ACL4SSR 包含 Netflix、YouTube、ChatGPT 等分组';
+        if (configHint) {
+            configHint.textContent = 'Clash 支持规则模板；其他格式会忽略此项';
         }
     } else {
         configGroup.style.display = 'none';
+        if (configHint) {
+            configHint.textContent = '选择你使用的代理客户端';
+        }
     }
 }
 
@@ -94,7 +87,9 @@ async function convert() {
     const apiKey = document.getElementById('apiKey').value.trim();
     const subscriptions = document.getElementById('subscriptions').value.trim();
     const nodes = document.getElementById('nodes').value.trim();
-    const outputFormat = document.getElementById('outputFormat').value;
+    const outputSelect = document.getElementById('outputFormat');
+    const outputFormat = outputSelect.value;
+    const outputVer = outputSelect.selectedOptions[0]?.dataset?.ver || '';
     const configTemplate = document.getElementById('configTemplate').value;
     const includeFilter = document.getElementById('includeFilter').value.trim();
     const excludeFilter = document.getElementById('excludeFilter').value.trim();
@@ -116,6 +111,9 @@ async function convert() {
     // 构建 API URL
     const params = new URLSearchParams();
     params.set('target', outputFormat);
+    if (outputFormat === 'surge' && outputVer) {
+        params.set('ver', outputVer);
+    }
 
     // 处理订阅链接
     if (subscriptions) {
@@ -172,7 +170,7 @@ async function convert() {
         const result = await response.text();
 
         // 生成订阅链接
-        const subscriptionUrl = `${window.location.origin}/sub?${params.toString()}`;
+        const subscriptionUrl = `${window.location.origin}/api/sub?${params.toString()}`;
 
         // 显示结果
         showResult(subscriptionUrl, result);
@@ -202,12 +200,13 @@ function showResult(url, content) {
 
     // 统计节点数量
     const nodeCount = (content.match(/- name:/g) || []).length;
+    const countText = nodeCount > 0 ? `✅ 转换成功！共 ${nodeCount} 个节点` : '✅ 转换成功！';
 
     resultInfo.innerHTML = `
         <div class="success">
-            ✅ 转换成功！共 ${nodeCount} 个节点
+            ${countText}
             <br>
-            <small>请复制上方链接到 Clash 或其他客户端使用</small>
+            <small>请复制上方链接到对应客户端使用</small>
         </div>
     `;
 

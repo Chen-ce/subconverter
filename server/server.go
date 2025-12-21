@@ -49,17 +49,11 @@ func New(cfg *config.Config) *Server {
 
 // setupRoutes 设置路由
 func (s *Server) setupRoutes() {
-	// 静态文件（Web 界面）
-	s.engine.Static("/web", "./web")
-	
 	// 健康检查（无需认证）
 	s.engine.GET("/health", handler.Health)
 	
-	// 短链接订阅（需要认证）
-	s.engine.GET("/sub/:id", middleware.Auth(), handler.ConvertByID)
-	
 	// API 路由（需要认证）
-	api := s.engine.Group("/")
+	api := s.engine.Group("/api")
 	api.Use(middleware.Auth())
 	{
 		// 订阅转换
@@ -67,12 +61,26 @@ func (s *Server) setupRoutes() {
 		api.GET("/templates", handler.Templates)
 		
 		// 配置管理
-		api.POST("/api/config", handler.CreateConfig)
-		api.GET("/api/config/:id", handler.GetConfig)
-		api.PUT("/api/config/:id", handler.UpdateConfig)
-		api.DELETE("/api/config/:id", handler.DeleteConfig)
-		api.GET("/api/configs", handler.ListConfigs)
+		api.POST("/config", handler.CreateConfig)
+		api.GET("/config/:id", handler.GetConfig)
+		api.PUT("/config/:id", handler.UpdateConfig)
+		api.DELETE("/config/:id", handler.DeleteConfig)
+		api.GET("/configs", handler.ListConfigs)
 	}
+	
+	// 短链接订阅（需要认证）
+	s.engine.GET("/sub/:id", middleware.Auth(), handler.ConvertByID)
+	
+	// 兼容旧路径 /sub（无 ID）
+	s.engine.GET("/sub", middleware.Auth(), handler.Convert)
+	
+	// 静态文件（Web 界面）- 放在最后，作为 fallback
+	s.engine.Static("/assets", "./web")
+	s.engine.StaticFile("/", "./web/index.html")
+	s.engine.StaticFile("/configs.html", "./web/configs.html")
+	s.engine.StaticFile("/app.js", "./web/app.js")
+	s.engine.StaticFile("/configs.js", "./web/configs.js")
+	s.engine.StaticFile("/style.css", "./web/style.css")
 }
 
 // Start 启动服务器
