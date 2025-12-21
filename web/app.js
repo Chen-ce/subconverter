@@ -131,7 +131,7 @@ async function convert() {
     showLoading();
 
     try {
-        const response = await fetch(`/api/sub?${params.toString()}`);
+        const response = await fetch(`/sub?${params.toString()}`);
 
         if (response.status === 401) {
             showError('API 密钥错误，请检查后重试');
@@ -148,7 +148,7 @@ async function convert() {
         const result = await response.text();
 
         // 生成订阅链接
-        const subscriptionUrl = `${window.location.origin}/api/sub?${params.toString()}`;
+        const subscriptionUrl = `${window.location.origin}/sub?${params.toString()}`;
 
         // 显示结果
         showResult(subscriptionUrl, result);

@@ -118,19 +118,16 @@ func Convert(c *gin.Context) {
 	var err error
 	var contentType string
 	
-	// 解析 target 参数（处理 surge&ver=X 格式）
-	targetParts := strings.Split(target, "&")
-	baseTarget := targetParts[0]
+	// 解析 target 参数
+	target = strings.ToLower(target)
 	
-	// 获取版本参数（用于 Surge）
+	// 获取版本参数（用于 Surge）- 从 query 参数读取
 	version := 4 // 默认版本
-	for _, part := range targetParts[1:] {
-		if strings.HasPrefix(part, "ver=") {
-			fmt.Sscanf(part, "ver=%d", &version)
-		}
+	if verParam := c.Query("ver"); verParam != "" {
+		fmt.Sscanf(verParam, "%d", &version)
 	}
 	
-	switch baseTarget {
+	switch target {
 	case "clash":
 		// 使用模板
 		cfg := config.Get()

@@ -44,13 +44,13 @@ func New(cfg *config.Config) *Server {
 // setupRoutes 设置路由
 func (s *Server) setupRoutes() {
 	// 静态文件（Web 界面）
-	s.engine.Static("/", "./web")
+	s.engine.Static("/web", "./web")
 	
 	// 健康检查（无需认证）
 	s.engine.GET("/health", handler.Health)
 	
 	// API 路由（需要认证）
-	api := s.engine.Group("/api")
+	api := s.engine.Group("/")
 	api.Use(middleware.Auth())
 	{
 		api.GET("/sub", handler.Convert)

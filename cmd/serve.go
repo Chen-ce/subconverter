@@ -64,10 +64,8 @@ func runServe(cmd *cobra.Command, args []string) error {
 	}
 	
 	// 设置全局配置
-	if config.Get() == nil {
-		// 手动设置全局配置
-		_ = cfg
-	}
+	config.Set(cfg)
+
 	
 	// 显示配置信息
 	fmt.Printf("Server configuration:\n")

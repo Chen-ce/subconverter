@@ -70,6 +70,12 @@ func Get() *Config {
 	return globalConfig
 }
 
+// Set 设置全局配置
+func Set(cfg *Config) {
+	globalConfig = cfg
+}
+
+
 // IsValidAPIKey 验证 API 密钥
 func (c *Config) IsValidAPIKey(key string) bool {
 	if !c.Auth.Enabled {

@@ -28,12 +28,17 @@ func (m *Merger) Merge() []*parser.Node {
 		return []*parser.Node{}
 	}
 	
-	// 使用 map 进行去重，key 为 server:port
+	// 使用 map 进行去重，key 为 server:port:type:uuid/password
 	seen := make(map[string]bool)
 	var result []*parser.Node
 	
 	for _, node := range m.nodes {
-		key := fmt.Sprintf("%s:%d", node.Server, node.Port)
+		// 构建更精确的去重 key，包含协议和凭证
+		credential := node.UUID
+		if credential == "" {
+			credential = node.Password
+		}
+		key := fmt.Sprintf("%s:%d:%s:%s", node.Server, node.Port, node.Type, credential)
 		
 		if !seen[key] {
 			seen[key] = true
