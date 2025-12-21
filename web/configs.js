@@ -1,7 +1,7 @@
 // 页面加载时初始化
 window.addEventListener('DOMContentLoaded', () => {
     loadSavedApiKey();
-    loadConfigs();
+    // 不自动加载配置，让用户主动点击刷新或创建
 });
 
 // 加载保存的 API 密钥
@@ -20,7 +20,16 @@ function saveApiKey() {
     }
 }
 
-// 获取 API 密钥
+// 获取 API 密钥（静默模式，不弹窗）
+function getApiKeySilent() {
+    const apiKey = document.getElementById('apiKey').value.trim();
+    if (apiKey) {
+        saveApiKey();
+    }
+    return apiKey || null;
+}
+
+// 获取 API 密钥（提示模式）
 function getApiKey() {
     const apiKey = document.getElementById('apiKey').value.trim();
     if (!apiKey) {
@@ -33,8 +42,13 @@ function getApiKey() {
 
 // 加载配置列表
 async function loadConfigs() {
-    const apiKey = getApiKey();
-    if (!apiKey) return;
+    const apiKey = getApiKeySilent();
+    if (!apiKey) {
+        // 静默失败，显示提示信息
+        const container = document.getElementById('configsList');
+        container.innerHTML = '<p style="text-align: center; color: #718096;">请先输入 API 密钥，然后点击刷新列表</p>';
+        return;
+    }
 
     try {
         const response = await fetch('/api/configs', {
@@ -270,7 +284,7 @@ window.onclick = function (event) {
 function updateModalTemplateDescription() {
     const template = document.getElementById('modalConfig').value;
     const descElement = document.getElementById('modalTemplateDescription');
-    
+
     const descriptions = {
         '': '使用基础配置，适合快速测试',
         'default': '✨ 简化版规则\n• 基础分流（代理/直连）\n• 适合节点较少的情况',
@@ -281,7 +295,7 @@ function updateModalTemplateDescription() {
         'acl4ssr_online_adblock': '🛡️ 强化去广告版\n• ✅✅ 增强广告拦截\n• ✅ 应用净化\n• ✅ 隐私保护\n• 适合注重去广告的用户',
         'acl4ssr_online_noauto': '🎮 无自动测速版\n• ✅ 完整分流规则\n• ❌ 无自动测速（手动选择节点）\n• 适合喜欢手动控制的用户'
     };
-    
+
     if (descElement) {
         const desc = descriptions[template] || '';
         descElement.textContent = desc;
