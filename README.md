@@ -57,7 +57,40 @@ go build -o subconverter
 ./subconverter serve
 ```
 
-## 📖 使用指南
+### 🛠️ 外部编程调用 (API)
+
+本项目暴露了专门供外部程序调用的 POST 接口。该接口**强制要求**通过 Request Header 携带 API 密钥。
+
+- **Endpoint**: `POST /api/convert`
+- **Authentication**: `Authorization: Bearer <Your_API_Key>`
+- **Content-Type**: `application/json`
+
+#### 请求参数 (JSON):
+| 参数 | 类型 | 必填 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `target` | string | 是 | 客户端类型 (clash, singbox, surge, etc.) |
+| `url` | string | 否 | 订阅链接，多个用 `\|` 分隔 |
+| `nodes` | array | 否 | 单独节点 URI 列表 (`vmess://...`) |
+| `config` | string | 否 | 配置模板名称 (如 `acl4ssr`) |
+| `include` | string | 否 | 包含关键字 |
+| `exclude` | string | 否 | 排除关键字 |
+| `ver` | string | 否 | Surge 版本 (如 `4`) |
+
+#### cURL 示例:
+```bash
+curl -X POST "https://your-domain.com/api/convert" \
+     -H "Authorization: Bearer YOUR_API_KEY" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "target": "clash",
+       "url": "https://example.com/sub1|https://example.com/sub2",
+       "config": "acl4ssr_online"
+     }'
+```
+
+---
+
+## 🏗️ 部署指南
 
 ### Web 界面
 

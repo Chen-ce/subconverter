@@ -28,6 +28,26 @@ func Convert(c *gin.Context) {
 	executeConversion(c, target, urlParam, nodeParams, configName, include, exclude, ver)
 }
 
+// PureConvert 供外部程序调用的 JSON 转换接口 (POST)
+func PureConvert(c *gin.Context) {
+	var req struct {
+		Target  string   `json:"target" binding:"required"`
+		URL     string   `json:"url"`
+		Nodes   []string `json:"nodes"`
+		Config  string   `json:"config"`
+		Include string   `json:"include"`
+		Exclude string   `json:"exclude"`
+		Ver     string   `json:"ver"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid json body", "details": err.Error()})
+		return
+	}
+
+	executeConversion(c, req.Target, req.URL, req.Nodes, req.Config, req.Include, req.Exclude, req.Ver)
+}
+
 // executeConversion 执行实际的转换逻辑
 func executeConversion(c *gin.Context, target, urlParam string, nodeParams []string, configName, include, exclude, ver string) {
 	// 验证必需参数

@@ -41,6 +41,28 @@ func Auth() gin.HandlerFunc {
 	}
 }
 
+// HeaderOnlyAuth 严格仅限 Header 认证的中间件
+func HeaderOnlyAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		cfg := config.Get()
+		if !cfg.Auth.Enabled {
+			c.Next()
+			return
+		}
+
+		token := extractTokenFromHeader(c.GetHeader("Authorization"))
+		if token == "" || !cfg.IsValidAPIKey(token) {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error":   "unauthorized",
+				"message": "this endpoint requires a valid API key in the Authorization header",
+			})
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
+
 // extractTokenFromHeader 从 Authorization header 提取 token
 func extractTokenFromHeader(authHeader string) string {
 	if authHeader == "" {
