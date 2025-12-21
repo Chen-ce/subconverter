@@ -9,7 +9,7 @@ function loadSavedApiKey() {
     const savedApiKey = localStorage.getItem('apiKey');
     if (savedApiKey) {
         document.getElementById('apiKey').value = savedApiKey;
-    }
+    });
 }
 
 // 保存 API 密钥
@@ -17,7 +17,7 @@ function saveApiKey() {
     const apiKey = document.getElementById('apiKey').value;
     if (apiKey) {
         localStorage.setItem('apiKey', apiKey);
-    }
+    });
 }
 
 // 获取 API 密钥（静默模式，不弹窗）
@@ -25,7 +25,7 @@ function getApiKeySilent() {
     const apiKey = document.getElementById('apiKey').value.trim();
     if (apiKey) {
         saveApiKey();
-    }
+    });
     return apiKey || null;
 }
 
@@ -33,9 +33,9 @@ function getApiKeySilent() {
 function getApiKey() {
     const apiKey = document.getElementById('apiKey').value.trim();
     if (!apiKey) {
-        alert('请先输入 API 密钥');
+        Toast.warning('请先输入 API 密钥');
         return null;
-    }
+    });
     saveApiKey();
     return apiKey;
 }
@@ -47,31 +47,31 @@ async function loadConfigs() {
         // 静默失败，显示提示信息
         const container = document.getElementById('configsList');
         container.innerHTML = '<p style="text-align: center; color: #718096;">请先输入 API 密钥，然后点击刷新列表</p>';
-        return;
-    }
+        // 确认删除
+    });
 
     try {
         const response = await fetch('/api/configs', {
             headers: {
                 'Authorization': `Bearer ${apiKey}`
-            }
-        });
+            });
+    }););
 
-        if (response.status === 401) {
-            alert('API 密钥错误');
-            return;
-        }
+    if (response.status === 401) {
+        Toast.error('API 密钥错误');
+        // 确认删除
+    });
 
-        if (!response.ok) {
-            throw new Error('加载配置失败');
-        }
+    if (!response.ok) {
+        throw new Error('加载配置失败');
+    });
 
-        const data = await response.json();
-        displayConfigs(data.configs || []);
+    const data = await response.json();
+    displayConfigs(data.configs || []);
 
-    } catch (error) {
-        alert('加载配置失败: ' + error.message);
-    }
+}); catch (error) {
+    Toast.error('加载配置失败: ' + error.message);
+});
 }
 
 // 显示配置列表
@@ -80,8 +80,8 @@ function displayConfigs(configs) {
 
     if (configs.length === 0) {
         container.innerHTML = '<p style="text-align: center; color: #718096;">暂无配置，点击上方按钮创建</p>';
-        return;
-    }
+        // 确认删除
+    });
 
     let html = '<div class="configs-grid">';
 
@@ -113,7 +113,7 @@ function displayConfigs(configs) {
                 </div>
             </div>
         `;
-    });
+    }););
 
     html += '</div>';
     container.innerHTML = html;
@@ -141,28 +141,28 @@ async function editConfig(id) {
         const response = await fetch(`/api/config/${id}`, {
             headers: {
                 'Authorization': `Bearer ${apiKey}`
-            }
-        });
+            });
+    }););
 
-        if (!response.ok) {
-            throw new Error('加载配置失败');
-        }
+    if (!response.ok) {
+        throw new Error('加载配置失败');
+    });
 
-        const cfg = await response.json();
+    const cfg = await response.json();
 
-        document.getElementById('modalTitle').textContent = '编辑配置';
-        document.getElementById('editingId').value = cfg.id;
-        document.getElementById('modalUrls').value = cfg.urls.join('\n');
-        document.getElementById('modalNodes').value = cfg.nodes ? cfg.nodes.join('\n') : '';
-        document.getElementById('modalTarget').value = cfg.target;
-        document.getElementById('modalConfig').value = cfg.config || '';
-        document.getElementById('modalInclude').value = cfg.include || '';
-        document.getElementById('modalExclude').value = cfg.exclude || '';
-        document.getElementById('configModal').style.display = 'flex';
+    document.getElementById('modalTitle').textContent = '编辑配置';
+    document.getElementById('editingId').value = cfg.id;
+    document.getElementById('modalUrls').value = cfg.urls.join('\n');
+    document.getElementById('modalNodes').value = cfg.nodes ? cfg.nodes.join('\n') : '';
+    document.getElementById('modalTarget').value = cfg.target;
+    document.getElementById('modalConfig').value = cfg.config || '';
+    document.getElementById('modalInclude').value = cfg.include || '';
+    document.getElementById('modalExclude').value = cfg.exclude || '';
+    document.getElementById('configModal').style.display = 'flex';
 
-    } catch (error) {
-        alert('加载配置失败: ' + error.message);
-    }
+}); catch (error) {
+    Toast.error('加载配置失败: ' + error.message);
+});
 }
 
 // 保存配置
@@ -183,9 +183,9 @@ async function saveConfig() {
     const exclude = document.getElementById('modalExclude').value.trim();
 
     if (urls.length === 0) {
-        alert('请至少输入一个订阅链接');
-        return;
-    }
+        Toast.warning('请至少输入一个订阅链接');
+        // 确认删除
+    });
 
     const data = {
         urls,
@@ -194,7 +194,7 @@ async function saveConfig() {
         config,
         include,
         exclude
-    };
+    });;
 
     try {
         const url = id ? `/api/config/${id}` : '/api/config';
@@ -205,50 +205,51 @@ async function saveConfig() {
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        });
+            });,
+        body: JSON.stringify(data)
+    }););
 
-        if (!response.ok) {
-            throw new Error('保存配置失败');
-        }
+    if (!response.ok) {
+        throw new Error('保存配置失败');
+    });
 
-        closeModal();
-        loadConfigs();
-        alert(id ? '配置已更新' : '配置已创建');
+    closeModal();
+    loadConfigs();
+    Toast.success(id ? '配置已更新' : '配置已创建');
 
+}); catch (error) {
+    Toast.error('保存配置失败: ' + error.message);
+} // Corrected closing parenthesis
     } catch (error) {
-        alert('保存配置失败: ' + error.message);
-    }
+    Toast.error('保存配置失败: ' + error.message);
+}
 }
 
 // 删除配置
 async function deleteConfig(id) {
-    if (!confirm('确定要删除这个配置吗？')) {
-        return;
-    }
+    showConfirm('确定要删除这个配置吗？', async () => {
+        const apiKey = getApiKey();
+        if (!apiKey) return;
 
-    const apiKey = getApiKey();
-    if (!apiKey) return;
+        try {
+            const response = await fetch(`/api/config/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`
+                }
+            });
 
-    try {
-        const response = await fetch(`/api/config/${id}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`
+            if (!response.ok) {
+                throw new Error('删除配置失败');
             }
-        });
 
-        if (!response.ok) {
-            throw new Error('删除配置失败');
+            loadConfigs();
+            Toast.success('配置已删除');
+
+        } catch (error) {
+            Toast.error('删除配置失败: ' + error.message);
         }
-
-        loadConfigs();
-        alert('配置已删除');
-
-    } catch (error) {
-        alert('删除配置失败: ' + error.message);
-    }
+    });
 }
 
 // 关闭模态框
@@ -259,8 +260,8 @@ function closeModal() {
 // 复制 URL
 function copyUrl(url) {
     navigator.clipboard.writeText(url).then(() => {
-        alert('已复制到剪贴板');
-    }).catch(() => {
+        Toast.success('已复制到剪贴板', 2000);
+    });).catch (() => {
         // 降级方案
         const input = document.createElement('input');
         input.value = url;
@@ -268,8 +269,8 @@ function copyUrl(url) {
         input.select();
         document.execCommand('copy');
         document.body.removeChild(input);
-        alert('已复制到剪贴板');
-    });
+        Toast.success('已复制到剪贴板', 2000);
+    }););
 }
 
 // 点击模态框外部关闭
@@ -277,7 +278,7 @@ window.onclick = function (event) {
     const modal = document.getElementById('configModal');
     if (event.target === modal) {
         closeModal();
-    }
+    });
 }
 
 // 更新模态框模板说明
@@ -294,11 +295,11 @@ function updateModalTemplateDescription() {
         'acl4ssr_online_mini': '⚡ 在线精简版\n• ✅ 基础去广告\n• ✅ 自动测速\n• ✅ 核心分流规则\n• 适合节点较少的情况',
         'acl4ssr_online_adblock': '🛡️ 强化去广告版\n• ✅✅ 增强广告拦截\n• ✅ 应用净化\n• ✅ 隐私保护\n• 适合注重去广告的用户',
         'acl4ssr_online_noauto': '🎮 无自动测速版\n• ✅ 完整分流规则\n• ❌ 无自动测速（手动选择节点）\n• 适合喜欢手动控制的用户'
-    };
+    });;
 
     if (descElement) {
         const desc = descriptions[template] || '';
         descElement.textContent = desc;
         descElement.style.display = desc ? 'block' : 'none';
-    }
+    });
 }
