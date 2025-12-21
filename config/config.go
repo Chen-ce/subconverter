@@ -18,8 +18,9 @@ type Config struct {
 
 // ServerConfig 服务器配置
 type ServerConfig struct {
-	Port int    `yaml:"port"`
-	Host string `yaml:"host"`
+	Port    int    `yaml:"port"`
+	Host    string `yaml:"host"`
+	WebPath string `yaml:"web_path"` // Web 界面路径前缀，默认为空（根路径）
 }
 
 // AuthConfig 认证配置
@@ -105,8 +106,9 @@ func DefaultConfig() *Config {
 	
 	return &Config{
 		Server: ServerConfig{
-			Port: 8080,
-			Host: "0.0.0.0",
+			Port:    8080,
+			Host:    "0.0.0.0",
+			WebPath: "", // 默认根路径
 		},
 		Auth: AuthConfig{
 			Enabled: true,

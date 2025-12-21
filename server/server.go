@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 	
@@ -52,6 +53,12 @@ func (s *Server) setupRoutes() {
 	// 健康检查（无需认证）
 	s.engine.GET("/health", handler.Health)
 	
+	// 获取 Web 路径配置
+	webPath := s.config.Server.WebPath
+	if webPath != "" && !strings.HasPrefix(webPath, "/") {
+		webPath = "/" + webPath
+	}
+	
 	// API 路由（需要认证）
 	api := s.engine.Group("/api")
 	api.Use(middleware.Auth())
@@ -74,13 +81,18 @@ func (s *Server) setupRoutes() {
 	// 兼容旧路径 /sub（无 ID）
 	s.engine.GET("/sub", middleware.Auth(), handler.Convert)
 	
-	// 静态文件（Web 界面）- 放在最后，作为 fallback
-	s.engine.Static("/assets", "./web")
-	s.engine.StaticFile("/", "./web/index.html")
-	s.engine.StaticFile("/configs.html", "./web/configs.html")
-	s.engine.StaticFile("/app.js", "./web/app.js")
-	s.engine.StaticFile("/configs.js", "./web/configs.js")
-	s.engine.StaticFile("/style.css", "./web/style.css")
+	// 静态文件（Web 界面）
+	if webPath == "" {
+		// 根路径模式：直接在根路径提供 Web 界面
+		s.engine.StaticFile("/", "./web/index.html")
+		s.engine.StaticFile("/configs.html", "./web/configs.html")
+		s.engine.StaticFile("/app.js", "./web/app.js")
+		s.engine.StaticFile("/configs.js", "./web/configs.js")
+		s.engine.StaticFile("/style.css", "./web/style.css")
+	} else {
+		// 自定义路径模式：在指定路径下提供 Web 界面
+		s.engine.Static(webPath, "./web")
+	}
 }
 
 // Start 启动服务器
