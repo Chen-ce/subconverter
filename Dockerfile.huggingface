@@ -23,5 +23,4 @@ ENV WEB_PATH=""
 
 EXPOSE 7860
 
-# 使用镜像中已有的启动命令
 CMD ["./subconverter", "serve", "--port", "7860", "--host", "0.0.0.0"]
