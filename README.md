@@ -88,6 +88,24 @@ curl -X POST "https://your-domain.com/api/convert" \
      }'
 ```
 
+#### 获取可用模板列表:
+- **Endpoint**: `GET /api/templates`
+- **Authentication**: `Authorization: Bearer <Your_API_Key>`
+
+**响应示例**:
+```json
+{
+  "templates": ["default", "acl4ssr", "acl4ssr_online", "acl4ssr_online_full"],
+  "default": "default"
+}
+```
+
+**cURL 示例**:
+```bash
+curl -X GET "https://your-domain.com/api/templates" \
+     -H "Authorization: Bearer YOUR_API_KEY"
+```
+
 ---
 
 ## 🏗️ 部署指南

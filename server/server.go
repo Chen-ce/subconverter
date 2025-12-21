@@ -65,10 +65,10 @@ func (s *Server) setupRoutes() {
 	{
 		// 订阅转换
 		api.GET("/sub", handler.Convert)
-		api.GET("/templates", handler.Templates)
 
 		// 编程调用接口 (专门供外部项目使用，强制要求 Header 认证)
 		api.POST("/convert", middleware.HeaderOnlyAuth(), handler.PureConvert)
+		api.GET("/templates", middleware.HeaderOnlyAuth(), handler.Templates)
 		
 		// 配置管理
 		api.POST("/config", handler.CreateConfig)
