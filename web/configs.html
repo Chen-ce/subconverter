@@ -82,7 +82,7 @@
 
                     <div class="form-group">
                         <label>规则模板（可选）</label>
-                        <select id="modalConfig">
+                        <select id="modalConfig" onchange="updateModalTemplateDescription()">
                             <option value="">默认</option>
                             <option value="default">Default</option>
                             <option value="acl4ssr">ACL4SSR（本地）</option>
@@ -94,6 +94,7 @@
                                 <option value="acl4ssr_online_noauto">ACL4SSR 无自动测速版</option>
                             </optgroup>
                         </select>
+                        <div id="modalTemplateDescription" class="template-desc"></div>
                     </div>
 
                     <div class="form-group">

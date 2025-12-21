@@ -517,3 +517,21 @@ footer a:hover {
         gap: 0.5rem;
     }
 }
+
+/* 模板说明 */
+.template-desc {
+    margin-top: 0.75rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    white-space: pre-line;
+    display: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.template-desc:empty {
+    display: none !important;
+}

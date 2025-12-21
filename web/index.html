@@ -75,7 +75,7 @@
 
                 <div class="form-group" id="configGroup">
                     <label for="configTemplate">规则模板</label>
-                    <select id="configTemplate">
+                    <select id="configTemplate" onchange="updateTemplateDescription()">
                         <option value="">默认</option>
                         <option value="default">Default（简化版）</option>
                         <option value="acl4ssr">ACL4SSR（本地完整版）</option>
@@ -87,7 +87,7 @@
                             <option value="acl4ssr_online_noauto">ACL4SSR 无自动测速版</option>
                         </optgroup>
                     </select>
-                    <small id="configHint">ACL4SSR 包含 Netflix、YouTube、ChatGPT 等分组</small>
+                    <div id="templateDescription" class="template-desc"></div>
                 </div>
 
                 <div class="form-group">

@@ -265,3 +265,26 @@ window.onclick = function (event) {
         closeModal();
     }
 }
+
+// 更新模态框模板说明
+function updateModalTemplateDescription() {
+    const template = document.getElementById('modalConfig').value;
+    const descElement = document.getElementById('modalTemplateDescription');
+    
+    const descriptions = {
+        '': '使用基础配置，适合快速测试',
+        'default': '✨ 简化版规则\n• 基础分流（代理/直连）\n• 适合节点较少的情况',
+        'acl4ssr': '🎯 本地完整版\n• 完整的分流规则\n• Netflix、YouTube、ChatGPT 等服务分组\n• 地区节点分组（香港、日本、美国等）',
+        'acl4ssr_online': '📡 在线基础版（推荐）\n• ✅ 去广告\n• ✅ 自动测速\n• ✅ 微软/苹果分流\n• 适合日常使用',
+        'acl4ssr_online_full': '🚀 在线完整版（功能最全）\n• ✅ 全功能分流\n• ✅ 流媒体分组（Netflix、Disney+、YouTube等）\n• ✅ AI服务分组（ChatGPT、Bing等）\n• ✅ 游戏平台分组\n• 适合节点丰富的用户',
+        'acl4ssr_online_mini': '⚡ 在线精简版\n• ✅ 基础去广告\n• ✅ 自动测速\n• ✅ 核心分流规则\n• 适合节点较少的情况',
+        'acl4ssr_online_adblock': '🛡️ 强化去广告版\n• ✅✅ 增强广告拦截\n• ✅ 应用净化\n• ✅ 隐私保护\n• 适合注重去广告的用户',
+        'acl4ssr_online_noauto': '🎮 无自动测速版\n• ✅ 完整分流规则\n• ❌ 无自动测速（手动选择节点）\n• 适合喜欢手动控制的用户'
+    };
+    
+    if (descElement) {
+        const desc = descriptions[template] || '';
+        descElement.textContent = desc;
+        descElement.style.display = desc ? 'block' : 'none';
+    }
+}
