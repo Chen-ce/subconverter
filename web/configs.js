@@ -273,7 +273,7 @@ window.onclick = function (event) {
     const modal = document.getElementById('configModal');
     if (event.target === modal) {
         closeModal();
-    });
+    };
 }
 
 // 更新模态框模板说明
