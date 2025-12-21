@@ -118,12 +118,19 @@ func Convert(c *gin.Context) {
 	var err error
 	var contentType string
 	
-	switch strings.ToLower(target) {
-	case "base64":
-		exp := exporter.NewBase64Exporter()
-		result, err = exp.Export(nodes)
-		contentType = "text/plain; charset=utf-8"
-		
+	// 解析 target 参数（处理 surge&ver=X 格式）
+	targetParts := strings.Split(target, "&")
+	baseTarget := targetParts[0]
+	
+	// 获取版本参数（用于 Surge）
+	version := 4 // 默认版本
+	for _, part := range targetParts[1:] {
+		if strings.HasPrefix(part, "ver=") {
+			fmt.Sscanf(part, "ver=%d", &version)
+		}
+	}
+	
+	switch baseTarget {
 	case "clash":
 		// 使用模板
 		cfg := config.Get()
@@ -146,9 +153,37 @@ func Convert(c *gin.Context) {
 		result, err = exp.ExportWithConfig(clashConfig)
 		contentType = "text/yaml; charset=utf-8"
 		
+	case "surge":
+		// Surge 导出
+		exp := exporter.NewSurgeExporter(version)
+		result, err = exp.Export(nodes)
+		contentType = "text/plain; charset=utf-8"
+		
+	case "surfboard":
+		// Surfboard 使用 Surge 4 格式
+		exp := exporter.NewSurgeExporter(4)
+		result, err = exp.Export(nodes)
+		contentType = "text/plain; charset=utf-8"
+		
+	case "v2ray", "ss", "ssr", "mixed":
+		// 通用格式（Base64 URI）
+		exp := exporter.NewBase64Exporter()
+		result, err = exp.Export(nodes)
+		contentType = "text/plain; charset=utf-8"
+		
+	case "quanx", "quan", "loon":
+		// 暂未实现的格式
+		c.JSON(http.StatusNotImplemented, gin.H{
+			"error": fmt.Sprintf("format '%s' is not implemented yet", target),
+			"message": "This format is coming soon. Please use 'clash', 'surge', or 'mixed' for now.",
+			"supported": []string{"clash", "surge&ver=4", "surge&ver=3", "v2ray", "ss", "ssr", "mixed"},
+		})
+		return
+		
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": fmt.Sprintf("unsupported target format: %s", target),
+			"supported": []string{"clash", "surge&ver=4", "surge&ver=3", "v2ray", "ss", "ssr", "mixed"},
 		})
 		return
 	}
