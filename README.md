@@ -1,3 +1,12 @@
+---
+title: Subconverter
+emoji: 🔄
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+---
+
 # Subconverter
 
 一个功能强大的 Go 语言代理订阅合并和转换工具，支持多种客户端格式、短链接配置管理和 Docker 部署。内置极简现代的 Web 界面，支持一键生成及持久化管理。
