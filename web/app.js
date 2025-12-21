@@ -44,7 +44,7 @@ function updateConfigVisibility() {
     const configHint = document.getElementById('configHint');
 
     // 支持规则配置的格式
-    const supportsConfig = ['clash', 'surge&ver=2', 'surge&ver=3', 'surge&ver=4',
+    const supportsConfig = ['clash', 'singbox', 'surge&ver=2', 'surge&ver=3', 'surge&ver=4',
         'surfboard', 'quanx', 'quan', 'loon'];
 
     if (supportsConfig.some(f => format.startsWith(f) || format === f)) {

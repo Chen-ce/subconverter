@@ -153,6 +153,12 @@ func Convert(c *gin.Context) {
 		result, err = exp.ExportWithConfig(clashConfig)
 		contentType = "text/yaml; charset=utf-8"
 		
+	case "singbox":
+		// Sing-box 导出
+		exp := exporter.NewSingboxExporter()
+		result, err = exp.Export(nodes)
+		contentType = "application/json; charset=utf-8"
+		
 	case "surge":
 		// Surge 导出
 		exp := exporter.NewSurgeExporter(version)
@@ -175,15 +181,15 @@ func Convert(c *gin.Context) {
 		// 暂未实现的格式
 		c.JSON(http.StatusNotImplemented, gin.H{
 			"error": fmt.Sprintf("format '%s' is not implemented yet", target),
-			"message": "This format is coming soon. Please use 'clash', 'surge', or 'mixed' for now.",
-			"supported": []string{"clash", "surge&ver=4", "surge&ver=3", "v2ray", "ss", "ssr", "mixed"},
+			"message": "This format is coming soon. Please use 'clash', 'singbox', 'surge', or 'mixed' for now.",
+			"supported": []string{"clash", "singbox", "surge&ver=4", "surge&ver=3", "v2ray", "ss", "ssr", "mixed"},
 		})
 		return
 		
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": fmt.Sprintf("unsupported target format: %s", target),
-			"supported": []string{"clash", "surge&ver=4", "surge&ver=3", "v2ray", "ss", "ssr", "mixed"},
+			"supported": []string{"clash", "singbox", "surge&ver=4", "surge&ver=3", "v2ray", "ss", "ssr", "mixed"},
 		})
 		return
 	}
