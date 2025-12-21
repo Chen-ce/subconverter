@@ -14,6 +14,13 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // 监听 API 密钥输入，自动刷新列表
+    const apiKeyInput = document.getElementById('apiKey');
+    apiKeyInput.addEventListener('change', () => {
+        saveApiKey();
+        fetchConfigList();
+    });
+
     // 检查是否从首页跳转过来
     const lastConfigId = localStorage.getItem('lastConfigId');
     if (lastConfigId) {
@@ -21,6 +28,12 @@ window.addEventListener('DOMContentLoaded', () => {
         localStorage.removeItem('lastConfigId');
         // 自动加载
         setTimeout(() => loadConfig(), 500);
+    }
+
+    // 尝试加载初始列表
+    const initialKey = apiKeyInput.value.trim();
+    if (initialKey) {
+        setTimeout(() => fetchConfigList(), 300);
     }
 });
 
@@ -38,6 +51,93 @@ function saveApiKey() {
     if (apiKey) {
         localStorage.setItem('apiKey', apiKey);
     }
+}
+
+// 获取配置列表
+async function fetchConfigList() {
+    const apiKey = document.getElementById('apiKey').value.trim();
+    const configList = document.getElementById('configList');
+
+    if (!apiKey) {
+        configList.innerHTML = '<div class="empty-state"><p>请先输入 API 密钥</p><small>以加载您的历史配置</small></div>';
+        return;
+    }
+
+    const btn = document.querySelector('#historySection .btn-icon');
+    if (btn) btn.style.transform = 'rotate(360deg)';
+    setTimeout(() => { if (btn) btn.style.transform = ''; }, 500);
+
+    configList.innerHTML = '<div class="empty-state"><p>🚀 正在加载...</p></div>';
+
+    try {
+        const response = await fetch('/api/config', {
+            headers: {
+                'Authorization': `Bearer ${apiKey}`
+            }
+        });
+
+        if (response.status === 401) {
+            configList.innerHTML = '<div class="empty-state"><p>❌ 身份验证失败</p><small>请检查 API 密钥是否正确</small></div>';
+            return;
+        }
+
+        if (!response.ok) {
+            throw new Error('无法连接到服务器');
+        }
+
+        const data = await response.json();
+        const configs = data.configs || [];
+
+        if (configs.length === 0) {
+            configList.innerHTML = '<div class="empty-state"><p>📜 暂无配置</p><small>快去首页尝试生成一个吧</small></div>';
+            return;
+        }
+
+        // 按时间倒序排列
+        configs.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+
+        configList.innerHTML = '';
+        configs.forEach(cfg => {
+            const item = document.createElement('div');
+            item.className = 'config-item fade-in';
+            item.onclick = () => selectFromList(cfg.id);
+
+            const urlsCount = cfg.urls ? cfg.urls.length : 0;
+            const nodesCount = cfg.nodes ? cfg.nodes.length : 0;
+            const date = new Date(cfg.updated_at).toLocaleString();
+
+            item.innerHTML = `
+                <div class="config-item-header">
+                    <span class="config-item-id">${cfg.id}</span>
+                    <span class="config-item-target">${cfg.target}</span>
+                </div>
+                <div class="config-item-info">
+                    ${urlsCount} 个订阅 / ${nodesCount} 个节点
+                </div>
+                <div class="config-item-date">${date}</div>
+            `;
+            configList.appendChild(item);
+        });
+
+    } catch (error) {
+        configList.innerHTML = `<div class="empty-state"><p>⚠️ 加载失败</p><small>${error.message}</small></div>`;
+    }
+}
+
+// 从列表选择配置
+function selectFromList(id) {
+    document.getElementById('configInput').value = id;
+    loadConfig();
+
+    // 高亮当前选中项
+    const items = document.querySelectorAll('.config-item');
+    items.forEach(item => {
+        if (item.querySelector('.config-item-id').textContent === id) {
+            item.classList.add('active');
+        } else {
+            item.classList.remove('active');
+        }
+    });
 }
 
 // 加载配置
@@ -81,7 +181,8 @@ async function loadFromLongUrl(url) {
             if (currentKey !== token) {
                 document.getElementById('apiKey').value = token;
                 saveApiKey();
-                document.getElementById('apiKeyGroup').style.display = 'block';
+                // 识别到新 token 后尝试刷新列表
+                fetchConfigList();
                 notify('success', '已从链接中识别 API 密钥');
             }
         }
@@ -108,7 +209,6 @@ async function loadFromShortLink(id) {
     const apiKey = document.getElementById('apiKey').value.trim();
 
     if (!apiKey) {
-        document.getElementById('apiKeyGroup').style.display = 'block';
         notify('warning', '加载短链接配置需要验证 API 密钥');
         return;
     }
@@ -430,6 +530,9 @@ async function saveConfig() {
         document.getElementById('shortLinkDisplay').style.display = 'block';
         document.getElementById('shortLinkDisplay').querySelector('label').textContent = '短链接地址';
 
+        // 保存成功后刷新列表
+        fetchConfigList();
+
         notify('success', configId ? '配置已更新并同步到短链接' : '配置已保存，短链接生成成功');
     } catch (error) {
         notify('error', '网络异常: ' + error.message);
@@ -465,6 +568,9 @@ async function deleteConfig() {
             notify('success', '配置已成功删除');
             document.getElementById('editorSection').style.display = 'none';
             document.getElementById('configInput').value = '';
+
+            // 删除成功后刷新列表
+            fetchConfigList();
         } catch (error) {
             notify('error', '系统错误: ' + error.message);
         }

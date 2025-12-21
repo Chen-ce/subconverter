@@ -73,13 +73,21 @@
                 </section>
 
                 <!-- 短链接选项 -->
-                <section class="card card-note">
-                    <div class="form-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="generateShortLink">
-                            <span>生成短链接（可在配置页面管理）</span>
+                <section class="card">
+                    <div class="card-title">
+                        <h2>生成短链接</h2>
+                        <span class="card-tag">Persistence</span>
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <p style="margin: 0; font-size: 0.95rem; font-weight: 500;">自动保存并生成短链接</p>
+                            <small style="display: block; opacity: 0.7; margin-top: 2px;">勾选后生成精简的 sub/...
+                                链接，支持后续修改</small>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="generateShortLink" checked>
+                            <span class="slider round"></span>
                         </label>
-                        <small>勾选后将保存配置并返回短链接，方便后续修改和管理</small>
                     </div>
                 </section>
 

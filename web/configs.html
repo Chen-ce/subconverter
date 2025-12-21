@@ -41,20 +41,34 @@
                         <span class="card-tag">Load Config</span>
                     </div>
                     <div class="form-group">
-                        <label>输入链接或短链接 ID</label>
-                        <input type="text" id="configInput" placeholder="粘贴完整链接或输入短链接 ID (如: abc123)">
-                        <small>支持：完整转换链接（自动提取 token）或短链接 ID</small>
+                        <label>API 密钥 (必填以管理列表)</label>
+                        <input type="password" id="apiKey" placeholder="输入 API 密钥以管理历史配置">
                     </div>
-                    <div class="form-group" id="apiKeyGroup" style="display: none;">
-                        <label>API 密钥</label>
-                        <input type="password" id="apiKey" placeholder="短链接需要 API 密钥">
-                        <small>短链接需要验证 API 密钥</small>
+                    <div class="form-group">
+                        <label>手动加载</label>
+                        <input type="text" id="configInput" placeholder="粘贴完整链接或输入短链接 ID">
                     </div>
                     <div class="actions">
                         <button class="btn btn-primary" onclick="loadConfig()">
                             <span class="btn-icon">📥</span>
-                            加载配置
+                            加载
                         </button>
+                    </div>
+                </section>
+
+                <!-- 历史配置列表 -->
+                <section class="card" id="historySection">
+                    <div class="card-title">
+                        <h2>我的配置</h2>
+                        <button class="btn btn-icon-only btn-secondary" onclick="fetchConfigList()" title="刷新列表">
+                            <span class="btn-icon">🔄</span>
+                        </button>
+                    </div>
+                    <div id="configList" class="config-list">
+                        <div class="empty-state">
+                            <p>输入密钥后点击刷新按钮</p>
+                            <small>自动加载功能即将上线</small>
+                        </div>
                     </div>
                 </section>
             </div>

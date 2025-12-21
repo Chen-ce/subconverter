@@ -379,7 +379,7 @@ small {
     background: rgba(56, 242, 214, 0.95);
 }
 
-.btn-icon {
+.btn-icon { transition: transform 0.5s ease;
     font-size: 1.1rem;
 }
 
@@ -991,4 +991,159 @@ footer a:hover {
     grid-template-columns: 1fr;
     max-width: 900px;
     margin: 0 auto;
+}
+/* iOS Style Switch */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 52px;
+    height: 31px;
+}
+
+.switch input { 
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #e9e9eb;
+    transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 27px;
+    width: 27px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+}
+
+input:checked + .slider {
+    background-color: #34c759;
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px #34c759;
+}
+
+input:checked + .slider:before {
+    transform: translateX(21px);
+}
+
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+
+/* Config List Styling */
+.config-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 500px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.config-item {
+    background: rgba(0, 0, 0, 0.02);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 12px;
+    padding: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.config-item:hover {
+    background: rgba(var(--accent-rgb), 0.05);
+    border-color: rgba(var(--accent-rgb), 0.2);
+    transform: translateX(4px);
+}
+
+.config-item.active {
+    background: rgba(var(--accent-rgb), 0.08);
+    border-color: var(--accent);
+}
+
+.config-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.config-item-id {
+    font-family: monospace;
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 0.9rem;
+}
+
+.config-item-target {
+    font-size: 0.7rem;
+    background: rgba(0,0,0,0.05);
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    font-weight: 600;
+    opacity: 0.7;
+}
+
+.config-item-info {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.config-item-date {
+    font-size: 0.65rem;
+    opacity: 0.5;
+    text-align: right;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--text-muted);
+}
+
+.empty-state p {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.empty-state small {
+    opacity: 0.6;
+}
+
+/* Custom Scrollbar for list */
+.config-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.config-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.config-list::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
 }
