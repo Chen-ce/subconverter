@@ -21,8 +21,10 @@ WORKDIR /root/
 
 # 复制二进制文件和配置
 COPY --from=builder /app/subconverter .
+COPY --from=builder /app/web ./web
 COPY --from=builder /app/templates ./templates
 COPY --from=builder /app/config.yaml .
+
 
 # 暴露端口
 EXPOSE 8080
