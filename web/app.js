@@ -244,7 +244,7 @@ async function createShortLinkConfig(apiKey, subscriptions, nodes, outputFormat,
     }
 
     const result = await response.json();
-    const shortUrl = `${window.location.origin}/sub/${result.id}`;
+    const shortUrl = `${window.location.origin}/sub/${result.id}?token=${encodeURIComponent(apiKey)}`;
 
     // 显示短链接结果
     showResult(shortUrl, null, true, result.id);

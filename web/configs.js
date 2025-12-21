@@ -263,7 +263,8 @@ function showConfigEditor(config, type, id = null) {
 
     // 如果已有短链接，默认展示出来
     if (type === 'short' && id) {
-        const shortUrl = `${window.location.origin}/sub/${id}`;
+        const apiKey = document.getElementById('apiKey').value.trim();
+        const shortUrl = `${window.location.origin}/sub/${id}${apiKey ? `?token=${encodeURIComponent(apiKey)}` : ''}`;
         const shortLinkUrl = document.getElementById('shortLinkUrl');
         shortLinkUrl.value = shortUrl;
         shortLinkDisplay.style.display = 'block';
@@ -524,7 +525,7 @@ async function saveConfig() {
             document.getElementById('configInput').value = result.id;
         }
 
-        const shortUrl = `${window.location.origin}/sub/${result.id || configId}`;
+        const shortUrl = `${window.location.origin}/sub/${result.id || configId}${apiKey ? `?token=${encodeURIComponent(apiKey)}` : ''}`;
         const shortLinkUrl = document.getElementById('shortLinkUrl');
         shortLinkUrl.value = shortUrl;
         document.getElementById('shortLinkDisplay').style.display = 'block';

@@ -3,7 +3,6 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 	
@@ -168,34 +167,17 @@ func ConvertByID(c *gin.Context) {
 		return
 	}
 	
-	// 设置查询参数（复用现有的 Convert 逻辑）
-	q := url.Values{}
-	
-	// 从配置设置参数
-	q.Set("target", cfg.Target)
+	// 转换参数
+	var urlParam string
 	if len(cfg.URLs) > 0 {
-		q.Set("url", strings.Join(cfg.URLs, "|"))
+		urlParam = strings.Join(cfg.URLs, "|")
 	}
-	
-	for _, node := range cfg.Nodes {
-		q.Add("node", node)
-	}
-	
-	if cfg.Config != "" {
-		q.Set("config", cfg.Config)
-	}
-	if cfg.Include != "" {
-		q.Set("include", cfg.Include)
-	}
-	if cfg.Exclude != "" {
-		q.Set("exclude", cfg.Exclude)
-	}
+
+	ver := ""
 	if cfg.Ver > 0 {
-		q.Set("ver", fmt.Sprintf("%d", cfg.Ver))
+		ver = fmt.Sprintf("%d", cfg.Ver)
 	}
-	
-	c.Request.URL.RawQuery = q.Encode()
-	
-	// 调用原有的转换逻辑
-	Convert(c)
+
+	// 执行转换逻辑（直接传递参数，绕过 Gin 的 Query 缓存）
+	executeConversion(c, cfg.Target, urlParam, cfg.Nodes, cfg.Config, cfg.Include, cfg.Exclude, ver)
 }
