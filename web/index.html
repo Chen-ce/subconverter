@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subconverter - 订阅转换工具</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 Subconverter</h1>
+            <p class="subtitle">订阅合并与转换工具</p>
+        </header>
+
+        <main>
+            <!-- API 密钥 -->
+            <section class="card">
+                <h2>🔐 API 密钥</h2>
+                <div class="form-group">
+                    <input type="password" id="apiKey" placeholder="请输入 API 密钥">
+                    <small>首次使用需要输入 API 密钥，请联系管理员获取</small>
+                </div>
+            </section>
+
+            <!-- 订阅链接 -->
+            <section class="card">
+                <h2>📋 订阅链接</h2>
+                <div class="form-group">
+                    <textarea id="subscriptions" rows="4" placeholder="请输入订阅链接，一行一个&#10;https://example.com/subscription1&#10;https://example.com/subscription2"></textarea>
+                    <small>支持多个订阅链接，每行一个</small>
+                </div>
+            </section>
+
+            <!-- 单独节点 -->
+            <section class="card">
+                <h2>🔗 单独节点（可选）</h2>
+                <div class="form-group">
+                    <textarea id="nodes" rows="3" placeholder="请输入节点链接，一行一个&#10;vmess://...&#10;trojan://..."></textarea>
+                    <small>支持 VMess、VLESS、Trojan、SS、SSR 协议</small>
+                </div>
+            </section>
+
+            <!-- 配置选项 -->
+            <section class="card">
+                <h2>⚙️ 配置选项</h2>
+                
+                <div class="form-group">
+                    <label for="outputFormat">输出格式</label>
+                    <select id="outputFormat">
+                        <option value="clash">Clash</option>
+                        <option value="base64">Base64</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="configGroup">
+                    <label for="configTemplate">规则模板</label>
+                    <select id="configTemplate">
+                        <option value="default">Default（简化版）</option>
+                        <option value="acl4ssr">ACL4SSR（完整版）</option>
+                    </select>
+                    <small>ACL4SSR 包含 Netflix、YouTube、ChatGPT 等分组</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="includeFilter">包含关键词（可选）</label>
+                    <input type="text" id="includeFilter" placeholder="香港|HK|日本|JP">
+                    <small>只保留包含这些关键词的节点，用 | 分隔</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="excludeFilter">排除关键词（可选）</label>
+                    <input type="text" id="excludeFilter" placeholder="x2|x3|x5">
+                    <small>排除包含这些关键词的节点，用 | 分隔</small>
+                </div>
+            </section>
+
+            <!-- 操作按钮 -->
+            <section class="actions">
+                <button class="btn btn-primary" onclick="convert()">
+                    <span class="btn-icon">🚀</span>
+                    开始转换
+                </button>
+                <button class="btn btn-secondary" onclick="clearForm()">
+                    <span class="btn-icon">🗑️</span>
+                    清空表单
+                </button>
+            </section>
+
+            <!-- 结果显示 -->
+            <section class="card result-card" id="resultSection" style="display: none;">
+                <h2>✅ 转换结果</h2>
+                <div class="result-content">
+                    <div class="result-url">
+                        <input type="text" id="resultUrl" readonly>
+                        <button class="btn btn-copy" onclick="copyResult()">
+                            <span class="btn-icon">📋</span>
+                            复制
+                        </button>
+                    </div>
+                    <div class="result-info">
+                        <p id="resultInfo"></p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>
+                <a href="https://github.com/Chen-ce/subconverter" target="_blank">
+                    <span class="footer-icon">⭐</span>
+                    GitHub
+                </a>
+                |
+                <a href="/health" target="_blank">
+                    <span class="footer-icon">💚</span>
+                    服务状态
+                </a>
+            </p>
+            <p class="footer-text">Powered by Subconverter</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
