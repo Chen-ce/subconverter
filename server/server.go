@@ -78,19 +78,25 @@ func (s *Server) setupRoutes() {
 	// 短链接订阅（需要认证）
 	s.engine.GET("/sub/:id", middleware.Auth(), handler.ConvertByID)
 	
-	// 兼容旧路径 /sub（无 ID）
+	// 兼容旧路径 /sub（无 ID）- 放在 API 路由之外以保持兼容性
 	s.engine.GET("/sub", middleware.Auth(), handler.Convert)
 	
 	// 静态文件（Web 界面）
 	if webPath == "" {
 		// 根路径模式：直接在根路径提供 Web 界面
-		s.engine.StaticFile("/", "./web/index.html")
+		// 先注册具体的静态文件
+		s.engine.StaticFile("/index.html", "./web/index.html")
 		s.engine.StaticFile("/configs.html", "./web/configs.html")
 		s.engine.StaticFile("/health.html", "./web/health.html")
 		s.engine.StaticFile("/app.js", "./web/app.js")
 		s.engine.StaticFile("/configs.js", "./web/configs.js")
 		s.engine.StaticFile("/toast.js", "./web/toast.js")
 		s.engine.StaticFile("/style.css", "./web/style.css")
+		
+		// 根路径重定向到 index.html
+		s.engine.GET("/", func(c *gin.Context) {
+			c.File("./web/index.html")
+		})
 	} else {
 		// 自定义路径模式：在指定路径下提供 Web 界面
 		s.engine.Static(webPath, "./web")
