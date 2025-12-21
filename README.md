@@ -1,418 +1,277 @@
 # Subconverter
 
-一个功能强大的 Go 语言代理订阅合并和转换工具，支持 HTTP API 服务器和 Docker 部署。
+一个功能强大的 Go 语言代理订阅合并和转换工具，支持多种客户端格式、短链接配置管理和 Docker 部署。
 
-## ✨ 功能特性
+## ✨ 核心功能
 
-### 核心功能
-- ✅ **合并多个订阅链接**：支持同时合并多个订阅源
-- ✅ **支持单独添加节点**：可以添加独立的节点 URI
-- ✅ **自动去重**：基于服务器地址和端口自动去除重复节点
-- ✅ **节点过滤**：支持 include/exclude 关键词过滤
-- ✅ **多协议支持**：VMess、VLESS、Trojan、Shadowsocks、ShadowsocksR
-- ✅ **多格式支持**：Base64、Clash YAML
+### 🎯 订阅转换
+- **多订阅合并**：同时合并多个订阅源
+- **单独节点添加**：支持添加独立节点 URI
+- **智能去重**：基于协议+凭证的精确去重
+- **节点过滤**：include/exclude 关键词过滤
 
-### 高级功能
-- 🚀 **HTTP API 服务器**：提供 RESTful API 接口
-- 🔐 **API 密钥认证**：支持 Bearer Token 和 URL 参数认证
-- 📝 **自定义规则模板**：内置多个 Clash 规则模板（default、acl4ssr）
-- 🐳 **Docker 部署**：完整的 Docker 和 docker-compose 支持
-- 🎯 **智能代理组**：自动按地区分组（香港、台湾、新加坡、日本、美国、韩国）
+### 📱 全客户端支持
+- **Clash** - 完整支持，含规则模板
+- **Sing-box** - JSON 格式
+- **Surge 2/3/4** - 所有版本
+- **Surfboard** - 基于 Surge 4
+- **Quantumult X** - 完整支持
+- **Loon** - 完整支持
+- **V2Ray/Shadowsocks/SSR** - Base64 URI
 
-## 📦 安装
+### 🔗 短链接配置系统
+- **配置持久化**：JSON 文件存储
+- **随时修改**：更新配置无需更改订阅链接
+- **Web 管理界面**：可视化配置管理
+- **安全隐私**：订阅链接不暴露在 URL 中
+
+### 📚 ACL4SSR 规则库
+- **在线基础版**：去广告、自动测速
+- **在线完整版**：流媒体、AI、游戏分组
+- **在线精简版**：轻量级规则
+- **强化去广告版**：增强拦截
+- **无自动测速版**：手动控制
+
+## 🚀 快速开始
+
+### Docker 部署（推荐）
+
+```bash
+# 1. 创建 .env 文件
+echo "API_KEY=$(openssl rand -hex 32)" > .env
+
+# 2. 启动服务
+docker-compose up -d
+
+# 3. 访问 Web 界面
+open http://localhost:8080/web
+```
 
 ### 从源码编译
 
 ```bash
-# 克隆仓库
-git clone https://github.com/guchenxi/subconverter.git
+git clone https://github.com/Chen-ce/subconverter.git
 cd subconverter
-
-# 下载依赖
-go mod download
-
-# 编译
 go build -o subconverter
-```
-
-### 使用 Docker
-
-```bash
-# 使用 docker-compose
-docker-compose up -d
-
-# 或使用 Docker
-docker build -t subconverter .
-docker run -d -p 8080:8080 -e API_KEY=your-secret-key subconverter
-```
-
-## 🚀 快速开始
-
-### 命令行模式（无需认证）
-
-```bash
-# 合并多个订阅
-./subconverter merge \
-  --sub "https://example.com/sub1" \
-  --sub "https://example.com/sub2" \
-  --output clash \
-  --file output.yaml
-
-# 添加单独节点
-./subconverter merge \
-  --node "vmess://..." \
-  --node "trojan://..." \
-  --output base64
-
-# 过滤节点
-./subconverter merge \
-  --sub "https://example.com/sub1" \
-  --include "香港|HK" \
-  --exclude "x2|x3" \
-  --output clash \
-  --config acl4ssr
-```
-
-### HTTP API 模式（需要认证）
-
-#### 1. 启动服务器
-
-```bash
-# 设置 API 密钥
-export API_KEY=your-secret-api-key
-
-# 启动服务器
 ./subconverter serve
 ```
 
-#### 2. 调用 API
+## 📖 使用方式
+
+### 方式 1: Web 界面（最简单）
+
+访问 `http://localhost:8080/web`
+
+**转换工具**：
+1. 输入 API 密钥
+2. 添加订阅链接
+3. 选择客户端类型和规则模板
+4. 点击转换，获取订阅链接
+
+**配置管理**：
+1. 创建配置（输入订阅、节点、规则）
+2. 获得短链接（如 `http://server/sub/abc123`）
+3. 添加到 Clash/Surge 等客户端
+4. 随时编辑配置，客户端自动同步
+
+### 方式 2: API 调用
 
 ```bash
-# 使用 Bearer Token 认证
-curl "http://localhost:8080/sub?target=clash&url=https%3A%2F%2Fexample.com%2Fsub1" \
-  -H "Authorization: Bearer your-secret-api-key"
+# 基础转换
+curl "http://localhost:8080/sub?target=clash&url=订阅链接&token=your-api-key"
 
-# 使用 URL 参数认证
-curl "http://localhost:8080/sub?target=clash&url=https%3A%2F%2Fexample.com%2Fsub1&token=your-secret-api-key"
+# 使用 ACL4SSR 完整版
+curl "http://localhost:8080/sub?target=clash&url=订阅链接&config=acl4ssr_online_full&token=xxx"
 
-# 合并多个订阅（用 | 分隔）
-curl "http://localhost:8080/sub?target=clash&url=https%3A%2F%2Fexample.com%2Fsub1%7Chttps%3A%2F%2Fexample.com%2Fsub2&token=your-key"
+# Surge 4
+curl "http://localhost:8080/sub?target=surge&ver=4&url=订阅链接&token=xxx"
+
+# Sing-box
+curl "http://localhost:8080/sub?target=singbox&url=订阅链接&token=xxx"
+
+# 创建短链接配置
+curl -X POST http://localhost:8080/api/config \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "urls": ["订阅1", "订阅2"],
+    "target": "clash",
+    "config": "acl4ssr_online_full"
+  }'
+# 返回: {"id": "abc123", "url": "http://server/sub/abc123"}
+
+# 使用短链接
+curl "http://localhost:8080/sub/abc123?token=your-api-key"
+```
+
+### 方式 3: 命令行
+
+```bash
+# 合并订阅
+./subconverter merge \
+  --sub "订阅1" \
+  --sub "订阅2" \
+  --output clash \
+  --config acl4ssr \
+  --file output.yaml
 
 # 过滤节点
-curl "http://localhost:8080/sub?target=clash&url=...&include=香港|HK&exclude=x2&token=your-key"
-
-# 使用自定义规则模板
-curl "http://localhost:8080/sub?target=clash&url=...&config=acl4ssr&token=your-key"
+./subconverter merge \
+  --sub "订阅链接" \
+  --include "香港|日本" \
+  --exclude "x2|x3" \
+  --output clash
 ```
 
-## 📖 详细文档
+## 📚 规则模板说明
 
-### 命令行参数
+| 模板 | 特点 | 适用场景 |
+|------|------|---------|
+| **acl4ssr_online** | ✅ 去广告 ✅ 自动测速 ✅ 基础分流 | 日常使用 |
+| **acl4ssr_online_full** | ✅ 流媒体 ✅ AI服务 ✅ 游戏平台 | 节点丰富 |
+| **acl4ssr_online_mini** | ⚡ 轻量级 ✅ 核心规则 | 节点较少 |
+| **acl4ssr_online_adblock** | 🛡️ 强化去广告 ✅ 隐私保护 | 注重去广告 |
+| **acl4ssr_online_noauto** | ❌ 无自动测速 ✅ 手动选择 | 手动控制 |
 
-#### `merge` 命令
+详见：[ACL4SSR_TEMPLATES.md](ACL4SSR_TEMPLATES.md)
 
-| 参数 | 简写 | 说明 | 示例 |
+## 🔧 API 端点
+
+| 端点 | 方法 | 说明 | 认证 |
 |------|------|------|------|
-| `--sub` | `-s` | 订阅链接（可多次指定） | `--sub "https://..."` |
-| `--node` | `-n` | 单独节点 URI（可多次指定） | `--node "vmess://..."` |
-| `--output` | `-o` | 输出格式（base64/clash） | `--output clash` |
-| `--file` | `-f` | 输出文件路径 | `--file output.yaml` |
-| `--include` | | 包含关键词（\| 分隔） | `--include "香港\|HK"` |
-| `--exclude` | | 排除关键词（\| 分隔） | `--exclude "x2\|x3"` |
-| `--config` | `-c` | Clash 规则模板名称 | `--config acl4ssr` |
+| `/health` | GET | 健康检查 | ❌ |
+| `/sub` | GET | 订阅转换 | ✅ |
+| `/sub/:id` | GET | 短链接订阅 | ✅ |
+| `/templates` | GET | 模板列表 | ✅ |
+| `/api/config` | POST | 创建配置 | ✅ |
+| `/api/config/:id` | GET | 查看配置 | ✅ |
+| `/api/config/:id` | PUT | 更新配置 | ✅ |
+| `/api/config/:id` | DELETE | 删除配置 | ✅ |
+| `/api/configs` | GET | 配置列表 | ✅ |
 
-#### `serve` 命令
+### 订阅转换参数
 
-| 参数 | 简写 | 说明 | 示例 |
-|------|------|------|------|
-| `--port` | `-p` | 服务器端口 | `--port 9090` |
-| `--host` | `-H` | 服务器地址 | `--host 0.0.0.0` |
-| `--config` | `-c` | 配置文件路径 | `--config config.yaml` |
-
-### API 端点
-
-#### `GET /health`
-健康检查端点（无需认证）
-
-**响应示例：**
-```json
-{
-  "status": "ok",
-  "message": "subconverter is running"
-}
-```
-
-#### `GET /sub`
-订阅转换端点（需要认证）
-
-**参数：**
-- `target`: 输出格式（clash, base64）
-- `url`: 订阅链接（多个用 | 分隔，需 URL 编码）
-- `node`: 单独节点（可多个）
-- `config`: 规则模板名称（可选，默认 default）
-- `include`: 包含关键词（可选，| 分隔）
-- `exclude`: 排除关键词（可选，| 分隔）
-- `token`: API 密钥（可选，也可用 Header）
-
-**认证方式：**
-1. Header: `Authorization: Bearer <API_KEY>`
-2. URL 参数: `?token=<API_KEY>`
-
-#### `GET /templates`
-获取可用模板列表（需要认证）
-
-**响应示例：**
-```json
-{
-  "templates": ["default", "acl4ssr"],
-  "default": "default"
-}
-```
-
-### 规则模板
-
-#### `default` 模板
-基础规则模板，包含：
-- 🚀 节点选择
-- ♻️ 自动选择
-- 🎯 全球直连
-- 常用网站规则
-- GeoIP 中国直连
-
-#### `acl4ssr` 模板
-ACL4SSR 风格规则模板，包含：
-- 🚀 节点选择
-- ♻️ 自动选择
-- 🇭🇰 香港节点
-- 🇨🇳 台湾节点
-- 🇸🇬 狮城节点
-- 🇯🇵 日本节点
-- 🇺🇲 美国节点
-- 🇰🇷 韩国节点
-- 🛑 广告拦截
-- 🐟 漏网之鱼
-- 完整的分流规则
+| 参数 | 说明 | 示例 |
+|------|------|------|
+| `target` | 客户端类型 | `clash`, `singbox`, `surge`, `quanx`, `loon` |
+| `url` | 订阅链接（\| 分隔） | `url1\|url2` |
+| `node` | 单独节点（可多个） | `vmess://...` |
+| `config` | 规则模板 | `acl4ssr_online_full` |
+| `include` | 包含关键词 | `香港\|日本` |
+| `exclude` | 排除关键词 | `x2\|x3` |
+| `ver` | Surge 版本 | `2`, `3`, `4` |
+| `token` | API 密钥 | - |
 
 ## 🐳 Docker 部署
 
-### 使用 docker-compose（推荐）
-
-1. **创建 `.env` 文件**
-
-```bash
-API_KEY=your-secret-api-key-change-this
-PORT=8080
-```
-
-2. **启动服务**
-
-```bash
-docker-compose up -d
-```
-
-3. **查看日志**
-
-```bash
-docker-compose logs -f
-```
-
-4. **停止服务**
-
-```bash
-docker-compose down
-```
-
-### 使用 Docker
-
-```bash
-# 构建镜像
-docker build -t subconverter .
-
-# 运行容器
-docker run -d \
-  -p 8080:8080 \
-  -e API_KEY=your-secret-key \
-  -v $(pwd)/config.yaml:/root/config.yaml \
-  -v $(pwd)/templates:/root/templates \
-  --name subconverter \
-  subconverter
-
-# 查看日志
-docker logs -f subconverter
-
-# 停止容器
-docker stop subconverter
-docker rm subconverter
-```
-
-## ⚙️ 配置文件
-
-### `config.yaml`
+### docker-compose（推荐）
 
 ```yaml
-server:
-  port: 8080
-  host: 0.0.0.0
-
-auth:
-  enabled: true
-  api_keys:
-    - ${API_KEY}  # 从环境变量读取
-
-templates:
-  dir: ./templates
-  default: default
-
-clash:
-  default_rules: default
+version: '3'
+services:
+  subconverter:
+    image: subconverter:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - API_KEY=${API_KEY}
+    volumes:
+      - ./config.yaml:/app/config.yaml
+      - ./templates:/app/templates
+      - ./data:/app/data  # 配置持久化
+    restart: unless-stopped
 ```
 
 ### 环境变量
 
-- `API_KEY`: API 密钥（必需）
-- `PORT`: 服务器端口（可选，默认 8080）
-- `HOST`: 服务器地址（可选，默认 0.0.0.0）
+```bash
+# .env
+API_KEY=your-secret-api-key-change-this
+PORT=8080
+```
 
 ## 🔒 安全建议
 
 > [!WARNING]
-> **生产环境安全建议**
+> **生产环境必读**
 
-1. **使用强密钥**：API_KEY 应使用至少 32 位随机字符串
+1. **强密钥**：使用 32 位以上随机字符串
    ```bash
-   # 生成随机密钥
    openssl rand -hex 32
    ```
 
-2. **启用 HTTPS**：使用 Nginx 或 Caddy 作为反向代理
+2. **HTTPS**：使用 Nginx/Caddy 反向代理
    ```nginx
    server {
        listen 443 ssl;
        server_name sub.example.com;
-       
-       ssl_certificate /path/to/cert.pem;
-       ssl_certificate_key /path/to/key.pem;
-       
        location / {
            proxy_pass http://localhost:8080;
-           proxy_set_header Host $host;
-           proxy_set_header X-Real-IP $remote_addr;
        }
    }
    ```
 
-3. **限流保护**：建议在反向代理层添加 rate limiting
-
-4. **日志监控**：定期检查访问日志，监控异常访问
-
-## 📝 使用示例
-
-### 示例 1: 合并三个订阅并使用 ACL4SSR 规则
-
-```bash
-./subconverter merge \
-  --sub "https://example1.com/subscription" \
-  --sub "https://example2.com/subscription" \
-  --sub "https://example3.com/subscription" \
-  --output clash \
-  --config acl4ssr \
-  --file merged.yaml
-```
-
-### 示例 2: 只保留香港和新加坡节点
-
-```bash
-./subconverter merge \
-  --sub "https://example.com/subscription" \
-  --include "香港|HK|新加坡|SG" \
-  --output clash \
-  --file hk_sg_only.yaml
-```
-
-### 示例 3: 排除高倍率节点
-
-```bash
-./subconverter merge \
-  --sub "https://example.com/subscription" \
-  --exclude "x2|x3|x5" \
-  --output clash
-```
-
-### 示例 4: API 调用示例（JavaScript）
-
-```javascript
-const API_KEY = 'your-secret-key';
-const subscriptions = [
-  'https://example1.com/sub',
-  'https://example2.com/sub'
-];
-
-const url = new URL('http://localhost:8080/sub');
-url.searchParams.set('target', 'clash');
-url.searchParams.set('url', subscriptions.join('|'));
-url.searchParams.set('config', 'acl4ssr');
-url.searchParams.set('token', API_KEY);
-
-fetch(url)
-  .then(res => res.text())
-  .then(config => {
-    console.log('Clash config:', config);
-  });
-```
-
-## 🛠️ 开发
-
-```bash
-# 运行测试
-go test ./...
-
-# 格式化代码
-go fmt ./...
-
-# 运行 linter
-golangci-lint run
-```
+3. **限流**：防止 API 滥用
+4. **监控**：定期检查访问日志
 
 ## 📂 项目结构
 
 ```
 subconverter/
 ├── cmd/                    # CLI 命令
-│   ├── root.go            # 根命令
-│   ├── merge.go           # 合并命令
-│   └── serve.go           # 服务器命令
-├── parser/                # 订阅解析器
-│   ├── types.go           # 通用类型
-│   ├── base64.go          # Base64 解析器
-│   ├── clash.go           # Clash 解析器
-│   └── node.go            # 节点 URI 解析器
-├── fetcher/               # 订阅获取器
-│   └── fetcher.go         # HTTP 获取器
-├── merger/                # 节点合并器
-│   └── merger.go          # 合并和去重
-├── exporter/              # 格式导出器
-│   ├── base64.go          # Base64 导出器
-│   ├── clash.go           # Clash 导出器
-│   └── clash_custom.go    # 自定义配置导出
-├── server/                # HTTP 服务器
-│   ├── server.go          # 服务器主逻辑
-│   ├── middleware/        # 中间件
-│   │   ├── auth.go        # 认证中间件
-│   │   └── cors.go        # CORS 中间件
-│   └── handler/           # 请求处理器
-│       ├── convert.go     # 转换处理器
-│       ├── health.go      # 健康检查
-│       └── templates.go   # 模板列表
-├── config/                # 配置管理
-│   └── config.go          # 配置加载和验证
-├── templates/             # 规则模板
-│   └── rules/             # Clash 规则模板
-│       ├── default.yaml   # 默认模板
-│       └── acl4ssr.yaml   # ACL4SSR 模板
-├── config.yaml            # 配置文件
-├── Dockerfile             # Docker 镜像
-├── docker-compose.yml     # Docker Compose 配置
-└── main.go                # 程序入口
+├── parser/                 # 订阅解析器
+├── fetcher/                # 订阅获取器
+├── merger/                 # 节点合并器（精确去重）
+├── exporter/               # 格式导出器
+│   ├── clash.go           # Clash
+│   ├── singbox.go         # Sing-box
+│   ├── surge.go           # Surge
+│   ├── quantumultx.go     # Quantumult X
+│   ├── loon.go            # Loon
+│   └── base64.go          # Base64
+├── server/                 # HTTP 服务器
+│   ├── middleware/        # 认证、CORS
+│   └── handler/           # API 处理器
+│       ├── convert.go     # 订阅转换
+│       └── config.go      # 配置管理
+├── storage/                # 配置存储（JSON）
+├── templates/              # 规则模板
+│   ├── template.go        # 模板管理器
+│   └── rules/             # Clash 规则
+├── web/                    # Web 界面
+│   ├── index.html         # 转换工具
+│   ├── configs.html       # 配置管理
+│   ├── app.js
+│   ├── configs.js
+│   └── style.css
+├── config.yaml             # 配置文件
+├── docker-compose.yml
+└── Dockerfile
+```
+
+## 🎯 使用场景
+
+### 场景 1: 多机场合并
+```
+机场1 + 机场2 + 机场3 → 一个订阅链接
+✅ 自动去重
+✅ 统一规则
+✅ 自动更新
+```
+
+### 场景 2: 自建节点混用
+```
+机场订阅 + 自建 VPS → 统一管理
+✅ 保留所有节点
+✅ 灵活分组
+```
+
+### 场景 3: 团队共享
+```
+创建配置 → 生成短链接 → 分享给团队
+✅ 统一配置
+✅ 集中管理
+✅ 随时更新
 ```
 
 ## 📄 License
@@ -422,3 +281,9 @@ MIT
 ## 🤝 贡献
 
 欢迎提交 Issue 和 Pull Request！
+
+## 🔗 相关链接
+
+- [ACL4SSR 规则库](https://github.com/ACL4SSR/ACL4SSR)
+- [Clash 文档](https://github.com/Dreamacro/clash)
+- [Sing-box 文档](https://sing-box.sagernet.org/)
