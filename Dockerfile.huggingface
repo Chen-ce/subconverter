@@ -1,0 +1,27 @@
+# Hugging Face Spaces - 使用预构建镜像
+
+这个 Dockerfile 直接使用 GitHub Actions 构建的镜像，无需重新编译。
+
+## 使用方法
+
+1. 确保 GitHub Actions 已经构建并推送了镜像
+2. 将此文件重命名为 `Dockerfile` 并推送到 Hugging Face Space
+3. 在 Space Settings 中设置 `API_KEY` Secret
+
+## 镜像来源
+
+- GitHub Container Registry: ghcr.io/chen-ce/subconverter:latest
+- Docker Hub: YOUR_USERNAME/subconverter:latest (如果配置了)
+
+# 直接使用 GitHub Actions 构建的镜像
+FROM ghcr.io/chen-ce/subconverter:latest
+
+# Hugging Face Spaces 配置
+ENV PORT=7860
+ENV HOST=0.0.0.0
+ENV WEB_PATH=""
+
+EXPOSE 7860
+
+# 使用镜像中已有的启动命令
+CMD ["./subconverter", "serve", "--port", "7860", "--host", "0.0.0.0"]
