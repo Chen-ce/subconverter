@@ -184,8 +184,8 @@ async function saveConfig() {
 
     if (urls.length === 0) {
         Toast.warning('请至少输入一个订阅链接');
-        // 确认删除
-    });
+        return;
+    }
 
     const data = {
         urls,
@@ -194,7 +194,7 @@ async function saveConfig() {
         config,
         include,
         exclude
-    });;
+    };
 
     try {
         const url = id ? `/api/config/${id}` : '/api/config';
@@ -205,24 +205,21 @@ async function saveConfig() {
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json'
-            });,
-        body: JSON.stringify(data)
-    }););
+            },
+            body: JSON.stringify(data)
+        });
 
-    if (!response.ok) {
-        throw new Error('保存配置失败');
-    });
+        if (!response.ok) {
+            throw new Error('保存配置失败');
+        }
 
-    closeModal();
-    loadConfigs();
-    Toast.success(id ? '配置已更新' : '配置已创建');
+        closeModal();
+        loadConfigs();
+        Toast.success(id ? '配置已更新' : '配置已创建');
 
-}); catch (error) {
-    Toast.error('保存配置失败: ' + error.message);
-} // Corrected closing parenthesis
     } catch (error) {
-    Toast.error('保存配置失败: ' + error.message);
-}
+        Toast.error('保存配置失败: ' + error.message);
+    }
 }
 
 // 删除配置
