@@ -177,19 +177,31 @@ func Convert(c *gin.Context) {
 		result, err = exp.Export(nodes)
 		contentType = "text/plain; charset=utf-8"
 		
-	case "quanx", "quan", "loon":
-		// 暂未实现的格式
+	case "quanx":
+		// Quantumult X 导出
+		exp := exporter.NewQuantumultXExporter()
+		result, err = exp.Export(nodes)
+		contentType = "text/plain; charset=utf-8"
+		
+	case "loon":
+		// Loon 导出
+		exp := exporter.NewLoonExporter()
+		result, err = exp.Export(nodes)
+		contentType = "text/plain; charset=utf-8"
+		
+	case "quan":
+		// Quantumult 暂未实现（使用 Quantumult X 格式）
 		c.JSON(http.StatusNotImplemented, gin.H{
-			"error": fmt.Sprintf("format '%s' is not implemented yet", target),
-			"message": "This format is coming soon. Please use 'clash', 'singbox', 'surge', or 'mixed' for now.",
-			"supported": []string{"clash", "singbox", "surge&ver=4", "surge&ver=3", "v2ray", "ss", "ssr", "mixed"},
+			"error": "Quantumult format is not implemented yet",
+			"message": "Please use 'quanx' (Quantumult X) instead",
+			"supported": []string{"clash", "singbox", "surge&ver=4", "quanx", "loon", "v2ray", "ss", "ssr", "mixed"},
 		})
 		return
 		
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": fmt.Sprintf("unsupported target format: %s", target),
-			"supported": []string{"clash", "singbox", "surge&ver=4", "surge&ver=3", "v2ray", "ss", "ssr", "mixed"},
+			"supported": []string{"clash", "singbox", "surge&ver=4", "surge&ver=3", "surfboard", "quanx", "loon", "v2ray", "ss", "ssr", "mixed"},
 		})
 		return
 	}
