@@ -38,24 +38,24 @@ func (f *Fetcher) SetUserAgent(ua string) {
 func (f *Fetcher) Fetch(url string) (string, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
+		return "", fmt.Errorf("failed to create request for %s: %w", url, err)
 	}
 	
 	req.Header.Set("User-Agent", f.userAgent)
 	
 	resp, err := f.client.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch subscription: %w", err)
+		return "", fmt.Errorf("failed to fetch subscription from %s: %w", url, err)
 	}
 	defer resp.Body.Close()
 	
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return "", fmt.Errorf("unexpected status code %d from %s", resp.StatusCode, url)
 	}
 	
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("failed to read response body: %w", err)
+		return "", fmt.Errorf("failed to read response body from %s: %w", url, err)
 	}
 	
 	return string(body), nil
