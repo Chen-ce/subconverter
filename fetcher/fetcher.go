@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -42,7 +43,9 @@ func (f *Fetcher) Fetch(url string) (string, error) {
 		return "", fmt.Errorf("failed to create request for %s: %w", url, err)
 	}
 	
-	req.Header.Set("User-Agent", f.userAgent)
+	// 根据 URL 参数智能选择 User-Agent
+	userAgent := f.detectUserAgent(url)
+	req.Header.Set("User-Agent", userAgent)
 	
 	resp, err := f.client.Do(req)
 	if err != nil {
@@ -64,4 +67,32 @@ func (f *Fetcher) Fetch(url string) (string, error) {
 	}
 	
 	return string(body), nil
+}
+
+// detectUserAgent 根据 URL 参数智能检测应该使用的 User-Agent
+func (f *Fetcher) detectUserAgent(url string) string {
+	urlLower := strings.ToLower(url)
+	
+	// 检查 URL 中的客户端标识参数
+	if strings.Contains(urlLower, "flag=clash") || strings.Contains(urlLower, "target=clash") {
+		return "clash-verge/v1.3.8"
+	}
+	if strings.Contains(urlLower, "flag=surge") || strings.Contains(urlLower, "target=surge") {
+		return "Surge/5.0.0"
+	}
+	if strings.Contains(urlLower, "flag=v2ray") || strings.Contains(urlLower, "target=v2ray") {
+		return "v2rayN/6.23"
+	}
+	if strings.Contains(urlLower, "flag=singbox") || strings.Contains(urlLower, "target=singbox") {
+		return "sing-box/1.8.0"
+	}
+	if strings.Contains(urlLower, "flag=quantumult") || strings.Contains(urlLower, "target=quanx") {
+		return "Quantumult%20X/1.4.1"
+	}
+	if strings.Contains(urlLower, "flag=loon") || strings.Contains(urlLower, "target=loon") {
+		return "Loon/3.2.0"
+	}
+	
+	// 默认使用 Clash User-Agent（最通用）
+	return "clash-verge/v1.3.8"
 }
