@@ -57,26 +57,36 @@ go build -o subconverter
 ./subconverter serve
 ```
 
-### 🛠️ 外部编程调用 (API)
+### 🛠️ API 接口文档
 
-本项目暴露了专门供外部程序调用的 POST 接口。该接口**强制要求**通过 Request Header 携带 API 密钥。
+本项目提供完整的 RESTful API，支持订阅转换、配置管理和模板查询。
 
-- **Endpoint**: `POST /api/convert`
-- **Authentication**: `Authorization: Bearer <Your_API_Key>`
+---
+
+#### 📡 订阅转换 API
+
+**1. GET /api/sub** - Web 端订阅转换
+- **认证**: URL 参数 `token` 或 Header `Authorization`
+- **用途**: Web 界面使用，支持 URL 参数传递
+- **参数**: `target`, `url`, `node`, `config`, `include`, `exclude`, `ver`, `token`
+
+**2. POST /api/convert** - 编程调用接口（推荐）
+- **认证**: **仅支持** Header `Authorization: Bearer <API_KEY>`
+- **用途**: 外部程序调用，JSON 格式交互
 - **Content-Type**: `application/json`
 
-#### 请求参数 (JSON):
+**请求参数**:
 | 参数 | 类型 | 必填 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `target` | string | 是 | 客户端类型 (clash, singbox, surge, etc.) |
+| `target` | string | 是 | 客户端类型 (clash, singbox, surge, v2ray, ss, ssr, quanx, loon) |
 | `url` | string | 否 | 订阅链接，多个用 `\|` 分隔 |
-| `nodes` | array | 否 | 单独节点 URI 列表 (`vmess://...`) |
-| `config` | string | 否 | 配置模板名称 (如 `acl4ssr`) |
-| `include` | string | 否 | 包含关键字 |
-| `exclude` | string | 否 | 排除关键字 |
-| `ver` | string | 否 | Surge 版本 (如 `4`) |
+| `nodes` | array | 否 | 单独节点 URI 列表 |
+| `config` | string | 否 | 配置模板名称 (仅 Clash 有效) |
+| `include` | string | 否 | 包含关键字，多个用 `\|` 分隔 |
+| `exclude` | string | 否 | 排除关键字，多个用 `\|` 分隔 |
+| `ver` | string | 否 | Surge 版本 (3 或 4) |
 
-#### cURL 示例:
+**cURL 示例**:
 ```bash
 curl -X POST "https://your-domain.com/api/convert" \
      -H "Authorization: Bearer YOUR_API_KEY" \
@@ -88,11 +98,18 @@ curl -X POST "https://your-domain.com/api/convert" \
      }'
 ```
 
-#### 获取可用模板列表:
-- **Endpoint**: `GET /api/templates`
-- **Authentication**: `Authorization: Bearer <Your_API_Key>`
+**3. GET /sub/:id** - 短链接订阅
+- **认证**: URL 参数 `token` 或 Header `Authorization`
+- **用途**: 通过短链接 ID 获取订阅
+- **示例**: `https://your-domain.com/sub/abc123?token=YOUR_KEY`
 
-**响应示例**:
+---
+
+#### 📋 模板管理 API
+
+**GET /api/templates** - 获取可用模板列表
+- **认证**: Header `Authorization: Bearer <API_KEY>`
+- **响应示例**:
 ```json
 {
   "templates": ["default", "acl4ssr", "acl4ssr_online", "acl4ssr_online_full"],
@@ -105,6 +122,39 @@ curl -X POST "https://your-domain.com/api/convert" \
 curl -X GET "https://your-domain.com/api/templates" \
      -H "Authorization: Bearer YOUR_API_KEY"
 ```
+
+---
+
+#### ⚙️ 配置管理 API
+
+**1. POST /api/config** - 创建短链接配置
+- **认证**: Header `Authorization: Bearer <API_KEY>`
+- **请求体**: JSON 格式，包含 `urls`, `nodes`, `target`, `config`, `include`, `exclude`, `ver`
+- **响应**: `{ "id": "abc123", "created_at": "..." }`
+
+**2. GET /api/config/:id** - 获取配置详情
+- **认证**: Header `Authorization: Bearer <API_KEY>`
+- **响应**: 完整配置对象
+
+**3. PUT /api/config/:id** - 更新配置
+- **认证**: Header `Authorization: Bearer <API_KEY>`
+- **请求体**: 与创建配置相同
+
+**4. DELETE /api/config/:id** - 删除配置
+- **认证**: Header `Authorization: Bearer <API_KEY>`
+- **响应**: `{ "message": "deleted" }`
+
+**5. GET /api/configs** - 列出所有配置
+- **认证**: Header `Authorization: Bearer <API_KEY>`
+- **响应**: `{ "configs": [...] }`
+
+---
+
+#### 🏥 健康检查 API
+
+**GET /health** - 服务健康状态
+- **认证**: 无需认证
+- **响应**: `{ "status": "ok", "time": "..." }`
 
 ---
 
