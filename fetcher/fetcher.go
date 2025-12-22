@@ -25,7 +25,8 @@ func NewFetcher() *Fetcher {
 				return nil
 			},
 		},
-		userAgent: "subconverter/1.0",
+		// 使用 Clash 的 User-Agent 以兼容更多订阅源
+		userAgent: "clash-verge/v1.3.8",
 	}
 }
 
