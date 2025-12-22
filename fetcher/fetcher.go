@@ -17,7 +17,7 @@ type Fetcher struct {
 func NewFetcher() *Fetcher {
 	return &Fetcher{
 		client: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: 60 * time.Second, // 增加超时时间以支持慢速订阅源
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				if len(via) >= 10 {
 					return fmt.Errorf("too many redirects")
@@ -45,6 +45,10 @@ func (f *Fetcher) Fetch(url string) (string, error) {
 	
 	resp, err := f.client.Do(req)
 	if err != nil {
+		// 提供更友好的超时错误提示
+		if err, ok := err.(interface{ Timeout() bool }); ok && err.Timeout() {
+			return "", fmt.Errorf("订阅源 %s 响应超时（60秒），请检查订阅源是否可用或网络连接", url)
+		}
 		return "", fmt.Errorf("failed to fetch subscription from %s: %w", url, err)
 	}
 	defer resp.Body.Close()
