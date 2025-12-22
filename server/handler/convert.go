@@ -72,33 +72,66 @@ func executeConversion(c *gin.Context, target, urlParam string, nodeParams []str
 	if urlParam != "" {
 		// 分割多个订阅（用 | 分隔）
 		urls := strings.Split(urlParam, "|")
-
-		f := fetcher.NewFetcher()
+		
+		// 过滤空 URL
+		var validURLs []string
 		for _, subURL := range urls {
 			subURL = strings.TrimSpace(subURL)
-			if subURL == "" {
-				continue
+			if subURL != "" {
+				validURLs = append(validURLs, subURL)
+			}
+		}
+
+		if len(validURLs) > 0 {
+			// 并发获取所有订阅
+			type fetchResult struct {
+				nodes []*parser.Node
+				err   error
+				url   string
 			}
 
-			// 获取订阅内容
-			content, err := f.Fetch(subURL)
-			if err != nil {
+			results := make(chan fetchResult, len(validURLs))
+			
+			// 启动并发获取
+			for _, subURL := range validURLs {
+				go func(url string) {
+					f := fetcher.NewFetcher()
+					content, err := f.Fetch(url)
+					if err != nil {
+						results <- fetchResult{err: err, url: url}
+						return
+					}
+
+					nodes, err := parseSubscription(content)
+					results <- fetchResult{nodes: nodes, err: err, url: url}
+				}(subURL)
+			}
+
+			// 收集结果
+			var fetchErrors []string
+			for i := 0; i < len(validURLs); i++ {
+				result := <-results
+				if result.err != nil {
+					fetchErrors = append(fetchErrors, fmt.Sprintf("%s: %v", result.url, result.err))
+					continue
+				}
+				m.Add(result.nodes)
+			}
+
+			// 如果所有订阅都失败了，返回错误
+			if len(fetchErrors) == len(validURLs) {
 				c.JSON(http.StatusBadGateway, gin.H{
-					"error": fmt.Sprintf("failed to fetch subscription: %v", err),
+					"error":   "failed to fetch all subscriptions",
+					"details": fetchErrors,
 				})
 				return
 			}
 
-			// 解析订阅
-			nodes, err := parseSubscription(content)
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{
-					"error": fmt.Sprintf("failed to parse subscription: %v", err),
-				})
-				return
+			// 如果部分失败，记录警告但继续处理
+			if len(fetchErrors) > 0 {
+				// 可以选择在响应头中添加警告信息
+				c.Header("X-Fetch-Warnings", fmt.Sprintf("%d/%d subscriptions failed", len(fetchErrors), len(validURLs)))
 			}
-
-			m.Add(nodes)
 		}
 	}
 
