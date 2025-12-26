@@ -2,6 +2,7 @@ server:
   port: 8080
   host: 0.0.0.0
   web_path: "${WEB_PATH}"  # Web 界面路径，默认为空（根路径 /）
+  log_level: "${LOG_LEVEL}"
 
 auth:
   enabled: true

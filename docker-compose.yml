@@ -8,7 +8,12 @@ services:
       - "${PORT:-8080}:8080"
     environment:
       - API_KEY=${API_KEY}
-      - WEB_PATH=${WEB_PATH:-} # 可选，默认为根路径
+      - WEB_PATH=${WEB_PATH:-}
+      - STORAGE_TYPE=${STORAGE_TYPE:-json}
+      - STORAGE_PATH=${STORAGE_PATH:-./data/configs}
+      - HF_REPO_ID=${HF_REPO_ID}
+      - HF_TOKEN=${HF_TOKEN}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
     volumes:
       - ./config.yaml:/app/config.yaml
       - ./templates:/app/templates

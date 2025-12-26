@@ -12,6 +12,7 @@ import (
 	
 	"github.com/gin-gonic/gin"
 	"github.com/Chen-ce/subconverter/config"
+	"github.com/Chen-ce/subconverter/pkg/logger"
 	"github.com/Chen-ce/subconverter/server/handler"
 	"github.com/Chen-ce/subconverter/server/middleware"
 )
@@ -27,6 +28,10 @@ type Server struct {
 func New(cfg *config.Config) *Server {
 	// 设置 Gin 模式
 	gin.SetMode(gin.ReleaseMode)
+	
+	// 初始化日志
+	logger.Init(cfg.Server.LogLevel)
+	logger.Info("Logger initialized", "level", cfg.Server.LogLevel)
 	
 	engine := gin.New()
 	engine.Use(gin.Logger()) // 启用请求日志，方便排查 API 错误
@@ -48,13 +53,12 @@ func New(cfg *config.Config) *Server {
 	hfToken := cfg.Storage.Token
 	
 	if err := handler.InitConfigStorage(storageType, storagePath, hfRepoID, hfToken); err != nil {
-		fmt.Printf("Warning: failed to initialize config storage: %v\n", err)
+		logger.Error("Failed to initialize config storage", "error", err)
 	} else {
-		fmt.Printf("Storage initialized: type=%s", storageType)
 		if storageType == "hf" {
-			fmt.Printf(", repo=%s\n", hfRepoID)
+			logger.Info("Storage initialized", "type", storageType, "repo", hfRepoID)
 		} else {
-			fmt.Printf(", path=%s\n", storagePath)
+			logger.Info("Storage initialized", "type", storageType, "path", storagePath)
 		}
 	}
 	
@@ -132,9 +136,9 @@ func (s *Server) Start() error {
 	
 	// 启动服务器
 	go func() {
-		fmt.Printf("Starting server on %s\n", addr)
+		logger.Info("Starting server", "addr", addr)
 		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			fmt.Printf("Server error: %v\n", err)
+			logger.Error("Server error", "error", err)
 			os.Exit(1)
 		}
 	}()
@@ -144,7 +148,7 @@ func (s *Server) Start() error {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	
-	fmt.Println("\nShutting down server...")
+	logger.Info("Shutting down server...")
 	
 	// 优雅关闭
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -154,6 +158,6 @@ func (s *Server) Start() error {
 		return fmt.Errorf("server forced to shutdown: %w", err)
 	}
 	
-	fmt.Println("Server stopped")
+	logger.Info("Server stopped")
 	return nil
 }

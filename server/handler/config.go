@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 	
+	"github.com/Chen-ce/subconverter/pkg/logger"
 	"github.com/Chen-ce/subconverter/storage"
 	"github.com/gin-gonic/gin"
 )
@@ -60,7 +61,7 @@ func CreateConfig(c *gin.Context) {
 	
 	// 保存
 	if err := configStorage.Save(cfg); err != nil {
-		fmt.Printf("Error saving config: %v\n", err)
+		logger.Error("Failed to create config", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save config: " + err.Error()})
 		return
 	}
@@ -127,7 +128,7 @@ func UpdateConfig(c *gin.Context) {
 	
 	// 保存
 	if err := configStorage.Save(cfg); err != nil {
-		fmt.Printf("Error updating config: %v\n", err)
+		logger.Error("Failed to update config", "id", id, "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update config: " + err.Error()})
 		return
 	}
@@ -151,7 +152,7 @@ func DeleteConfig(c *gin.Context) {
 func ListConfigs(c *gin.Context) {
 	configs, err := configStorage.List()
 	if err != nil {
-		fmt.Printf("Error listing configs: %v\n", err)
+		logger.Error("Failed to list configs", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list configs: " + err.Error()})
 		return
 	}

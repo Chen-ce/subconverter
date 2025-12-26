@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/Chen-ce/subconverter/pkg/logger"
 	"io"
 	"net/http"
 	"strings"
@@ -81,7 +82,7 @@ func (s *HFDatasetStorage) Save(cfg *SubscriptionConfig) error {
 	req.Header.Set("Authorization", "Bearer "+s.token)
 	req.Header.Set("Content-Type", "application/json")
 
-	fmt.Printf("Committing to HF: %s\n", apiURL)
+	logger.Debug("Committing to HF", "url", apiURL)
 	resp, err := s.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to commit to HF: %w", err)
@@ -90,7 +91,7 @@ func (s *HFDatasetStorage) Save(cfg *SubscriptionConfig) error {
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		respBody, _ := io.ReadAll(resp.Body)
-		fmt.Printf("HF API error response: %s\n", string(respBody))
+		logger.Error("HF API error response", "status", resp.StatusCode, "body", string(respBody))
 		return fmt.Errorf("HF commit error (%d): %s", resp.StatusCode, string(respBody))
 	}
 
