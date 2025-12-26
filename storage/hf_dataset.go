@@ -56,7 +56,7 @@ func (s *HFDatasetStorage) Save(cfg *SubscriptionConfig) error {
 	base64Content := base64.StdEncoding.EncodeToString(data) // HF commit 需要 base64
 
 	payload := map[string]interface{}{
-		"title": "Update config " + cfg.ID, // commit title (required)
+		"summary": "Update config " + cfg.ID, // commit message (required)
 		"operations": []map[string]interface{}{
 			{
 				"op":       "add", // add 或 update 都用 add (如果存在会覆盖)
@@ -135,7 +135,7 @@ func (s *HFDatasetStorage) Delete(id string) error {
 	filePath := id + ".json"
 
 	payload := map[string]interface{}{
-		"title": "Delete config " + id,
+		"summary": "Delete config " + id,
 		"operations": []map[string]interface{}{
 			{
 				"op":   "delete",
