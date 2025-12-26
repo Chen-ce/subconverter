@@ -12,6 +12,7 @@ import (
 type Config struct {
 	Server    ServerConfig    `yaml:"server"`
 	Auth      AuthConfig      `yaml:"auth"`
+	Storage   StorageConfig   `yaml:"storage"`
 	Templates TemplatesConfig `yaml:"templates"`
 	Clash     ClashConfig     `yaml:"clash"`
 }
@@ -27,6 +28,14 @@ type ServerConfig struct {
 type AuthConfig struct {
 	Enabled bool     `yaml:"enabled"`
 	APIKeys []string `yaml:"api_keys"`
+}
+
+// StorageConfig 存储配置
+type StorageConfig struct {
+	Type   string `yaml:"type"`    // "json" or "hf"
+	Path   string `yaml:"path"`    // 本地数据目录
+	RepoID string `yaml:"repo_id"` // HF Dataset ID (e.g., username/repo)
+	Token  string `yaml:"token"`   // HF Access Token
 }
 
 // TemplatesConfig 模板配置

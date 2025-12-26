@@ -38,9 +38,23 @@ func New(cfg *config.Config) *Server {
 	}
 	
 	// 初始化配置存储
-	dataDir := "./data/configs"
-	if err := handler.InitConfigStorage(dataDir); err != nil {
+	storageType := cfg.Storage.Type
+	storagePath := cfg.Storage.Path
+	if storagePath == "" {
+		storagePath = "./data/configs"
+	}
+	hfRepoID := cfg.Storage.RepoID
+	hfToken := cfg.Storage.Token
+	
+	if err := handler.InitConfigStorage(storageType, storagePath, hfRepoID, hfToken); err != nil {
 		fmt.Printf("Warning: failed to initialize config storage: %v\n", err)
+	} else {
+		fmt.Printf("Storage initialized: type=%s", storageType)
+		if storageType == "hf" {
+			fmt.Printf(", repo=%s\n", hfRepoID)
+		} else {
+			fmt.Printf(", path=%s\n", storagePath)
+		}
 	}
 	
 	s.setupRoutes()

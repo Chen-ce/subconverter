@@ -8,6 +8,12 @@ auth:
   api_keys:
     - ${API_KEY}
 
+storage:
+  type: "${STORAGE_TYPE}"
+  path: "${STORAGE_PATH}"
+  repo_id: "${HF_REPO_ID}"
+  token: "${HF_TOKEN}"
+
 templates:
   dir: ./templates
   default: default

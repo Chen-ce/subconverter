@@ -156,6 +156,26 @@ curl -X GET "https://your-domain.com/api/templates" \
 - **认证**: 无需认证
 - **响应**: `{ "status": "ok", "time": "..." }`
 
+### 💾 存储配置 (持久化)
+
+本项目支持多种存储后端，确保在不同部署环境下数据不丢失：
+
+| 存储类型 | 适用场景 | 配置方式 |
+| :--- | :--- | :--- |
+| **JSON** | Docker 部署（有持久化卷） | `STORAGE_TYPE=json` |
+| **HF Dataset** | Hugging Face Spaces | `STORAGE_TYPE=hf` |
+
+#### Hugging Face Dataset 持久化设置 (推荐)：
+
+1. 在 Hugging Face 创建一个 **Private Dataset** (例如 `yourname/subconverter-data`)。
+2. 生成一个具有 **Write** 权限的 [Access Token](https://huggingface.co/settings/tokens)。
+3. 在 Space 的 **Settings** -> **Variables and secrets** 中添加：
+   - `STORAGE_TYPE`: `hf`
+   - `HF_REPO_ID`: `yourname/subconverter-data`
+   - `HF_TOKEN`: `你的 Access Token`
+
+这样配置后，你的短链接数据将永久保存在私有数据集中，重启 Space 也不会丢失。
+
 ---
 
 ## 🏗️ 部署指南

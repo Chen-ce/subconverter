@@ -10,40 +10,25 @@ import (
 	"time"
 )
 
-// SubscriptionConfig 订阅配置
-type SubscriptionConfig struct {
-	ID        string    `json:"id"`
-	URLs      []string  `json:"urls"`
-	Nodes     []string  `json:"nodes,omitempty"`
-	Target    string    `json:"target"`
-	Config    string    `json:"config,omitempty"`
-	Include   string    `json:"include,omitempty"`
-	Exclude   string    `json:"exclude,omitempty"`
-	Ver       int       `json:"ver,omitempty"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Version   int       `json:"version"`
-}
-
-// ConfigStorage 配置存储
-type ConfigStorage struct {
+// JSONStorage JSON 文件存储实现
+type JSONStorage struct {
 	dataDir string
 }
 
-// NewConfigStorage 创建配置存储
-func NewConfigStorage(dataDir string) (*ConfigStorage, error) {
+// NewJSONStorage 创建 JSON 存储
+func NewJSONStorage(dataDir string) (*JSONStorage, error) {
 	// 确保数据目录存在
 	if err := os.MkdirAll(dataDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create data directory: %w", err)
 	}
 	
-	return &ConfigStorage{
+	return &JSONStorage{
 		dataDir: dataDir,
 	}, nil
 }
 
 // GenerateID 生成随机 ID
-func (s *ConfigStorage) GenerateID() (string, error) {
+func (s *JSONStorage) GenerateID() (string, error) {
 	bytes := make([]byte, 6)
 	if _, err := rand.Read(bytes); err != nil {
 		return "", err
@@ -52,7 +37,7 @@ func (s *ConfigStorage) GenerateID() (string, error) {
 }
 
 // Save 保存配置
-func (s *ConfigStorage) Save(cfg *SubscriptionConfig) error {
+func (s *JSONStorage) Save(cfg *SubscriptionConfig) error {
 	// 更新时间戳
 	cfg.UpdatedAt = time.Now()
 	cfg.Version++
@@ -73,7 +58,7 @@ func (s *ConfigStorage) Save(cfg *SubscriptionConfig) error {
 }
 
 // Load 加载配置
-func (s *ConfigStorage) Load(id string) (*SubscriptionConfig, error) {
+func (s *JSONStorage) Load(id string) (*SubscriptionConfig, error) {
 	filePath := filepath.Join(s.dataDir, id+".json")
 	
 	data, err := os.ReadFile(filePath)
@@ -93,7 +78,7 @@ func (s *ConfigStorage) Load(id string) (*SubscriptionConfig, error) {
 }
 
 // Delete 删除配置
-func (s *ConfigStorage) Delete(id string) error {
+func (s *JSONStorage) Delete(id string) error {
 	filePath := filepath.Join(s.dataDir, id+".json")
 	
 	if err := os.Remove(filePath); err != nil {
@@ -107,7 +92,7 @@ func (s *ConfigStorage) Delete(id string) error {
 }
 
 // List 列出所有配置
-func (s *ConfigStorage) List() ([]*SubscriptionConfig, error) {
+func (s *JSONStorage) List() ([]*SubscriptionConfig, error) {
 	entries, err := os.ReadDir(s.dataDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read data directory: %w", err)
@@ -119,7 +104,7 @@ func (s *ConfigStorage) List() ([]*SubscriptionConfig, error) {
 			continue
 		}
 		
-		id := entry.Name()[:len(entry.Name())-5] // 去掉 .json
+		id := entry.Name()[:len(entry.Name())-5] // 去调 .json
 		cfg, err := s.Load(id)
 		if err != nil {
 			continue // 跳过损坏的文件
@@ -132,8 +117,16 @@ func (s *ConfigStorage) List() ([]*SubscriptionConfig, error) {
 }
 
 // Exists 检查配置是否存在
-func (s *ConfigStorage) Exists(id string) bool {
+func (s *JSONStorage) Exists(id string) bool {
 	filePath := filepath.Join(s.dataDir, id+".json")
 	_, err := os.Stat(filePath)
 	return err == nil
+}
+
+// ConfigStorage 为向后兼容保留的别名
+type ConfigStorage = JSONStorage
+
+// NewConfigStorage 为向后兼容保留的工厂函数
+func NewConfigStorage(dataDir string) (*ConfigStorage, error) {
+	return NewJSONStorage(dataDir)
 }

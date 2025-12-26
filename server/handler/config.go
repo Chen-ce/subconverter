@@ -10,12 +10,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var configStorage *storage.ConfigStorage
+var configStorage storage.Storage
 
 // InitConfigStorage 初始化配置存储
-func InitConfigStorage(dataDir string) error {
+func InitConfigStorage(cfgType, path, repoID, token string) error {
 	var err error
-	configStorage, err = storage.NewConfigStorage(dataDir)
+	configStorage, err = storage.NewStorage(cfgType, path, repoID, token)
 	return err
 }
 
