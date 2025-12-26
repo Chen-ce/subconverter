@@ -23,4 +23,4 @@ ENV WEB_PATH=""
 
 EXPOSE 7860
 
-CMD ["./subconverter", "serve", "--port", "7860", "--host", "0.0.0.0"]
+CMD ["./subconverter", "serve", "--port", "7860", "--host", "0.0.0.0", "--log-level", "INFO"]

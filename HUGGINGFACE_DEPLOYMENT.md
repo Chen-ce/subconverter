@@ -30,7 +30,7 @@ ENV WEB_PATH=""
 EXPOSE 7860
 
 # 启动命令
-CMD ["./subconverter", "serve", "--port", "7860", "--host", "0.0.0.0"]
+CMD ["./subconverter", "serve", "--port", "7860", "--host", "0.0.0.0", "--log-level", "INFO"]
 ```
 
 ### 4. 设置 Secrets 与变量 (必须)

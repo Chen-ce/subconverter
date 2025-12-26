@@ -13,6 +13,7 @@ var (
 	servePort       int
 	serveHost       string
 	serveConfigFile string
+	serveLogLevel   string
 )
 
 var serveCmd = &cobra.Command{
@@ -37,6 +38,7 @@ func init() {
 	serveCmd.Flags().IntVarP(&servePort, "port", "p", 0, "Server port (overrides config file)")
 	serveCmd.Flags().StringVarP(&serveHost, "host", "H", "", "Server host (overrides config file)")
 	serveCmd.Flags().StringVarP(&serveConfigFile, "config", "c", "config.yaml", "Config file path")
+	serveCmd.Flags().StringVarP(&serveLogLevel, "log-level", "l", "", "Log level (DEBUG, INFO, WARN, ERROR) (overrides config file)")
 }
 
 func runServe(cmd *cobra.Command, args []string) error {
@@ -61,6 +63,9 @@ func runServe(cmd *cobra.Command, args []string) error {
 	}
 	if serveHost != "" {
 		cfg.Server.Host = serveHost
+	}
+	if serveLogLevel != "" {
+		cfg.Server.LogLevel = serveLogLevel
 	}
 	
 	// 设置全局配置
