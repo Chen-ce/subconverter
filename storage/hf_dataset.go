@@ -42,7 +42,7 @@ func (s *HFDatasetStorage) GenerateID() (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
-// Save 保存配置到 HF Dataset (通过 commit add/update)
+// Save 保存配置到 HF Dataset (通过 commit NDJSON 格式)
 func (s *HFDatasetStorage) Save(cfg *SubscriptionConfig) error {
 	cfg.UpdatedAt = time.Now()
 	cfg.Version++
@@ -53,48 +53,57 @@ func (s *HFDatasetStorage) Save(cfg *SubscriptionConfig) error {
 	}
 
 	filePath := cfg.ID + ".json"
-	base64Content := base64.StdEncoding.EncodeToString(data) // HF commit 需要 base64
+	base64Content := base64.StdEncoding.EncodeToString(data)
 
-	payload := map[string]interface{}{
-		"summary": "Update config " + cfg.ID, // commit message (required)
-		"operations": []map[string]interface{}{
-			{
-				"op":       "add", // add 或 update 都用 add (如果存在会覆盖)
-				"path":     filePath,
-				"content":  base64Content,
-				"encoding": "base64",
-			},
+	// 使用推荐的 NDJSON 格式
+	// 虽然 application/json 也支持，但 NDJSON 更规范且易于排错
+	header := map[string]interface{}{
+		"key": "header",
+		"value": map[string]interface{}{
+			"summary": "Update config " + cfg.ID,
+		},
+	}
+	op := map[string]interface{}{
+		"key": "file",
+		"value": map[string]interface{}{
+			"path":     filePath,
+			"content":  base64Content,
+			"encoding": "base64",
 		},
 	}
 
-	body, err := json.Marshal(payload)
-	if err != nil {
-		return err
-	}
+	var buf bytes.Buffer
+	hJson, _ := json.Marshal(header)
+	buf.Write(hJson)
+	buf.WriteByte('\n')
+	oJson, _ := json.Marshal(op)
+	buf.Write(oJson)
+	buf.WriteByte('\n')
 
 	apiURL := fmt.Sprintf("https://huggingface.co/api/datasets/%s/commit/main", s.repoID)
 
-	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", apiURL, &buf)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("Authorization", "Bearer "+s.token)
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", "application/x-ndjson")
 
-	logger.Debug("Committing to HF", "url", apiURL)
+	logger.Debug("Committing to HF (NDJSON)", "url", apiURL)
 	resp, err := s.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to commit to HF: %w", err)
 	}
 	defer resp.Body.Close()
 
+	respBody, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		respBody, _ := io.ReadAll(resp.Body)
 		logger.Error("HF API error response", "status", resp.StatusCode, "body", string(respBody))
 		return fmt.Errorf("HF commit error (%d): %s", resp.StatusCode, string(respBody))
 	}
 
+	logger.Info("Successfully committed to HF", "status", resp.StatusCode, "resp", string(respBody))
 	return nil
 }
 
@@ -130,34 +139,40 @@ func (s *HFDatasetStorage) Load(id string) (*SubscriptionConfig, error) {
 	return &cfg, nil
 }
 
-// Delete 从 HF Dataset 删除配置 (通过 commit delete operation)
+// Delete 从 HF Dataset 删除配置 (通过 commit NDJSON 格式)
 func (s *HFDatasetStorage) Delete(id string) error {
 	filePath := id + ".json"
 
-	payload := map[string]interface{}{
-		"summary": "Delete config " + id,
-		"operations": []map[string]interface{}{
-			{
-				"op":   "delete",
-				"path": filePath,
-			},
+	header := map[string]interface{}{
+		"key": "header",
+		"value": map[string]interface{}{
+			"summary": "Delete config " + id,
+		},
+	}
+	op := map[string]interface{}{
+		"key": "deletedEntry",
+		"value": map[string]interface{}{
+			"path": filePath,
 		},
 	}
 
-	body, err := json.Marshal(payload)
-	if err != nil {
-		return err
-	}
+	var buf bytes.Buffer
+	hJson, _ := json.Marshal(header)
+	buf.Write(hJson)
+	buf.WriteByte('\n')
+	oJson, _ := json.Marshal(op)
+	buf.Write(oJson)
+	buf.WriteByte('\n')
 
 	apiURL := fmt.Sprintf("https://huggingface.co/api/datasets/%s/commit/main", s.repoID)
 
-	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", apiURL, &buf)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("Authorization", "Bearer "+s.token)
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", "application/x-ndjson")
 
 	resp, err := s.client.Do(req)
 	if err != nil {
