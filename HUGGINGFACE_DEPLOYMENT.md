@@ -33,12 +33,26 @@ EXPOSE 7860
 CMD ["./subconverter", "serve", "--port", "7860", "--host", "0.0.0.0"]
 ```
 
-### 4. 设置 Secrets (必须)
-在 Hugging Face Space 的 **Settings** -> **Repository secrets** 中添加：
+### 4. 设置 Secrets 与变量 (必须)
+在 Hugging Face Space 的 **Settings** -> **Variables and secrets** 中添加：
 
-- `API_KEY`: 访问 Web 页面和管理历史配置所需的密钥。建议使用 `openssl rand -hex 16` 生成。
+**Secrets (加密保存):**
+- `API_KEY`: 访问 Web 页面和管理配置所需的密钥。
+- `HF_TOKEN`: 具有 **Write** 权限的 Hugging Face [Access Token](https://huggingface.co/settings/tokens)。
 
-### 5. 访问服务
+**Variables (公开变量):**
+- `STORAGE_TYPE`: 设置为 `hf` 即可开启数据集持久化。
+- `HF_REPO_ID`: 设置为你创建的私有数据集 ID (例如 `你的用户名/subconverter-data`)。
+
+### 5. 数据持久化 (推荐方案)
+
+由于 Hugging Face Spaces 默认文件系统重启即丢失，我们推荐使用私有 **Dataset** 进行持久化：
+
+1. **创建数据集**: 在 Hugging Face 创建一个 [New Dataset](https://huggingface.co/new-dataset)，设置为 **Private**。
+2. **配置变量**: 按照上述第 4 步，将 `STORAGE_TYPE` 设为 `hf`，并填入 `HF_REPO_ID` 和 `HF_TOKEN`。
+3. **效果**: 生成的短链接 JSON 配置会自动实时同步到你的私有数据集中。即使 Space 重启或代码更新，数据也永不丢失。
+
+### 6. 访问服务
 稍等 1-2 分钟，构建完成后即可通过 Space 域名预览：
 `https://YOUR_USERNAME-subconverter.hf.space/`
 
@@ -53,11 +67,6 @@ CMD ["./subconverter", "serve", "--port", "7860", "--host", "0.0.0.0"]
 1. 进入 Space 的 **Settings**。
 2. 找到 **Danger Zone**。
 3. 点击 **Factory reboot**。
-
-### 如何持久化数据？
-Hugging Face Spaces 的文件系统默认是**非持久化**的（虽然项目使用了 JSON 文件存储配置，但重启即丢）。
-- 如果你需要永久保存短链接配置，建议使用 Hugging Face 提供的 **Persistent Storage** 云盘挂载到 `/app/data`。
-- 或者定期备份 `data/config_storage.json`。
 
 ## ❓ 常见问题
 详见 [HF_TROUBLESHOOTING.md](HF_TROUBLESHOOTING.md)
