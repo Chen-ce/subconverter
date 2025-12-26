@@ -29,6 +29,7 @@ func New(cfg *config.Config) *Server {
 	gin.SetMode(gin.ReleaseMode)
 	
 	engine := gin.New()
+	engine.Use(gin.Logger()) // 启用请求日志，方便排查 API 错误
 	engine.Use(gin.Recovery())
 	engine.Use(middleware.CORS())
 	
