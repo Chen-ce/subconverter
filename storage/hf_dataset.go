@@ -3,6 +3,7 @@ package storage
 import (
 	"bytes"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -27,20 +28,20 @@ func NewHFDatasetStorage(repoID, token string) (*HFDatasetStorage, error) {
 	return &HFDatasetStorage{
 		repoID: repoID,
 		token:  token,
-		client: &http.Client{Timeout: 30 * time.Second},
+		client: &http.Client{Timeout: 60 * time.Second}, // 超时加大点，上传可能慢
 	}, nil
 }
 
 // GenerateID 生成随机 ID
 func (s *HFDatasetStorage) GenerateID() (string, error) {
-	bytes := make([]byte, 6)
-	if _, err := rand.Read(bytes); err != nil {
+	b := make([]byte, 6)
+	if _, err := rand.Read(b); err != nil {
 		return "", err
 	}
-	return hex.EncodeToString(bytes), nil
+	return hex.EncodeToString(b), nil
 }
 
-// Save 保存配置到 HF Dataset
+// Save 保存配置到 HF Dataset (通过 commit add/update)
 func (s *HFDatasetStorage) Save(cfg *SubscriptionConfig) error {
 	cfg.UpdatedAt = time.Now()
 	cfg.Version++
@@ -50,44 +51,59 @@ func (s *HFDatasetStorage) Save(cfg *SubscriptionConfig) error {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
 
-	// 使用 HF Hub API 上传文件 (PUT 方法)
-	// https://huggingface.co/docs/hub/api#put-apireposrepo-typerepo-iduploadpath
-	apiURL := fmt.Sprintf("https://huggingface.co/api/datasets/%s/upload/main/%s.json", s.repoID, cfg.ID)
-	
-	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(data))
+	filePath := cfg.ID + ".json"
+	base64Content := base64.StdEncoding.EncodeToString(data) // HF commit 需要 base64
+
+	payload := map[string]interface{}{
+		"title": "Update config " + cfg.ID, // commit title (required)
+		"operations": []map[string]interface{}{
+			{
+				"op":       "add", // add 或 update 都用 add (如果存在会覆盖)
+				"path":     filePath,
+				"content":  base64Content,
+				"encoding": "base64",
+			},
+		},
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	apiURL := fmt.Sprintf("https://huggingface.co/api/datasets/%s/commit/main", s.repoID)
+
+	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(body))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("Authorization", "Bearer "+s.token)
-	req.Header.Set("Content-Type", "application/octet-stream")
+	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to upload to HF: %w", err)
+		return fmt.Errorf("failed to commit to HF: %w", err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("HF API error (%d): %s", resp.StatusCode, string(body))
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		respBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("HF commit error (%d): %s", resp.StatusCode, string(respBody))
 	}
 
 	return nil
 }
 
-// Load 从 HF Dataset 加载配置
+// Load 从 HF Dataset 加载配置 (raw URL, 完美)
 func (s *HFDatasetStorage) Load(id string) (*SubscriptionConfig, error) {
-	// 直接从 HF 原始数据链接下载 (或者通过 API)
-	// https://huggingface.co/datasets/REPO_ID/raw/main/PATH
 	rawURL := fmt.Sprintf("https://huggingface.co/datasets/%s/raw/main/%s.json", s.repoID, id)
-	
+
 	req, err := http.NewRequest("GET", rawURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
-
-	req.Header.Set("Authorization", "Bearer "+s.token)
+	req.Header.Set("Authorization", "Bearer "+s.token) // 私有 repo 需要
 
 	resp, err := s.client.Do(req)
 	if err != nil {
@@ -98,7 +114,6 @@ func (s *HFDatasetStorage) Load(id string) (*SubscriptionConfig, error) {
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, fmt.Errorf("config not found: %s", id)
 	}
-
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("HF API error (%d): %s", resp.StatusCode, string(body))
@@ -112,24 +127,27 @@ func (s *HFDatasetStorage) Load(id string) (*SubscriptionConfig, error) {
 	return &cfg, nil
 }
 
-// Delete 从 HF Dataset 删除配置
+// Delete 从 HF Dataset 删除配置 (通过 commit delete operation)
 func (s *HFDatasetStorage) Delete(id string) error {
-	// HF API 目前没有直接删除单个文件的简单 REST API，通常需要提交 commit
-	// 简单起见，这里可能需要调用 https://huggingface.co/api/datasets/REPO_ID/commit/main
-	
+	filePath := id + ".json"
+
 	payload := map[string]interface{}{
-		"summary": "Delete config " + id,
+		"title": "Delete config " + id,
 		"operations": []map[string]interface{}{
 			{
-				"operation": "delete",
-				"path":      id + ".json",
+				"op":   "delete",
+				"path": filePath,
 			},
 		},
 	}
-	
-	body, _ := json.Marshal(payload)
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
 	apiURL := fmt.Sprintf("https://huggingface.co/api/datasets/%s/commit/main", s.repoID)
-	
+
 	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(body))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
@@ -146,23 +164,20 @@ func (s *HFDatasetStorage) Delete(id string) error {
 
 	if resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("HF API error (%d): %s", resp.StatusCode, string(respBody))
+		return fmt.Errorf("HF commit error (%d): %s", resp.StatusCode, string(respBody))
 	}
 
 	return nil
 }
 
-// List 列出所有配置
+// List 列出所有配置 (tree API 正确)
 func (s *HFDatasetStorage) List() ([]*SubscriptionConfig, error) {
-	// 使用 HF API 列出文件
-	// https://huggingface.co/api/datasets/REPO_ID/tree/main
 	apiURL := fmt.Sprintf("https://huggingface.co/api/datasets/%s/tree/main", s.repoID)
-	
+
 	req, err := http.NewRequest("GET", apiURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
-
 	req.Header.Set("Authorization", "Bearer "+s.token)
 
 	resp, err := s.client.Do(req)
@@ -190,7 +205,7 @@ func (s *HFDatasetStorage) List() ([]*SubscriptionConfig, error) {
 			id := strings.TrimSuffix(f.Path, ".json")
 			cfg, err := s.Load(id)
 			if err != nil {
-				continue
+				continue // 跳过损坏的
 			}
 			configs = append(configs, cfg)
 		}
@@ -199,7 +214,7 @@ func (s *HFDatasetStorage) List() ([]*SubscriptionConfig, error) {
 	return configs, nil
 }
 
-// Exists 检查配置是否存在
+// Exists 检查是否存在
 func (s *HFDatasetStorage) Exists(id string) bool {
 	_, err := s.Load(id)
 	return err == nil
