@@ -133,6 +133,9 @@ func UpdateConfig(c *gin.Context) {
 		return
 	}
 	
+	// 清除该 ID 下的所有缓存 (Tier 1 & Tier 2)
+	go configStorage.ClearCache(id)
+	
 	c.JSON(http.StatusOK, cfg)
 }
 

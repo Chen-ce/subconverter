@@ -38,4 +38,13 @@ type Storage interface {
 	
 	// Exists 检查配置是否存在
 	Exists(id string) bool
+
+	// SaveFile 保存辅助文件 (如缓存数据)
+	SaveFile(id, filename string, data []byte) error
+	
+	// LoadFile 加载辅助文件
+	LoadFile(id, filename string) ([]byte, error)
+
+	// ClearCache 清除该 ID 下的所有缓存文件 (保留 core.json)
+	ClearCache(id string) error
 }

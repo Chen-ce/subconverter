@@ -1,15 +1,19 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 	
 	"github.com/gin-gonic/gin"
 	"github.com/Chen-ce/subconverter/config"
 	"github.com/Chen-ce/subconverter/exporter"
 	"github.com/Chen-ce/subconverter/fetcher"
 	"github.com/Chen-ce/subconverter/merger"
+	"github.com/Chen-ce/subconverter/pkg/hash"
+	"github.com/Chen-ce/subconverter/pkg/logger"
 	"github.com/Chen-ce/subconverter/parser"
 	"github.com/Chen-ce/subconverter/templates"
 )
@@ -65,6 +69,41 @@ func executeConversion(c *gin.Context, target, urlParam string, nodeParams []str
 		return
 	}
 
+	// 1. 尝试从存储加载转换好的缓存 (Tier 1: Result Cache)
+	// 如果是通过 ID 调用的，我们可以检查 ID/export_{target}.txt
+	id := c.Param("id")
+	if id != "" {
+		cacheFile := fmt.Sprintf("export_%s.txt", target)
+		if data, err := configStorage.LoadFile(id, cacheFile); err == nil {
+			logger.Info("Serving from result cache", "id", id, "target", target)
+			// TODO: 根据 target 设置适当的 Content-Type
+			c.Data(http.StatusOK, "text/plain; charset=utf-8", data)
+			return
+		}
+	}
+
+	// 2. 开启 Keep-Alive 协程 (可选，对于可能会超时的长连接很有用)
+	// 通过 Flush 空格保持连接
+	stopKeepAlive := make(chan bool)
+	go func() {
+		ticker := time.NewTicker(15 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				// 发送一个空格，防止负载均衡或代理超时
+				// 注意：这会改变响应流，对于非流式响应（如 JSON）不适用
+				// 但订阅内容通常是文本/YAML，前面的空格通常会被忽略或可以被 Parser 容忍
+				// 更好的方案是注释，但不同格式注释不同
+				c.Writer.Write([]byte(" "))
+				c.Writer.Flush()
+			case <-stopKeepAlive:
+				return
+			}
+		}
+	}()
+	defer close(stopKeepAlive)
+
 	// 创建合并器
 	m := merger.NewMerger()
 
@@ -95,6 +134,20 @@ func executeConversion(c *gin.Context, target, urlParam string, nodeParams []str
 			// 启动并发获取
 			for _, subURL := range validURLs {
 				go func(url string) {
+					// 尝试从存储加载内容缓存 (Tier 2: Content Cache)
+					urlHash := hash.URLHash(url)
+					if id != "" {
+						cacheFile := fmt.Sprintf("cache_%s.json", urlHash)
+						if data, err := configStorage.LoadFile(id, cacheFile); err == nil {
+							var nodes []*parser.Node
+							if json.Unmarshal(data, &nodes) == nil {
+								logger.Debug("Loaded subscription from content cache", "hash", urlHash, "url", url)
+								results <- fetchResult{nodes: nodes, url: url}
+								return
+							}
+						}
+					}
+
 					f := fetcher.NewFetcher()
 					content, err := f.Fetch(url)
 					if err != nil {
@@ -103,6 +156,11 @@ func executeConversion(c *gin.Context, target, urlParam string, nodeParams []str
 					}
 
 					nodes, err := parseSubscription(content)
+					if err == nil && id != "" {
+						// 异步保存到缓存
+						nodeData, _ := json.Marshal(nodes)
+						go configStorage.SaveFile(id, fmt.Sprintf("cache_%s.json", urlHash), nodeData)
+					}
 					results <- fetchResult{nodes: nodes, err: err, url: url}
 				}(subURL)
 			}
@@ -264,6 +322,13 @@ func executeConversion(c *gin.Context, target, urlParam string, nodeParams []str
 	}
 
 	// 返回结果
+	logger.Info("Conversion successful", "target", target, "nodes", len(nodes))
+	
+	// 异步保存结果缓存 (Tier 1)
+	if id != "" {
+		go configStorage.SaveFile(id, fmt.Sprintf("export_%s.txt", target), []byte(result))
+	}
+
 	c.Data(http.StatusOK, contentType, []byte(result))
 }
 

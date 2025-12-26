@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/Chen-ce/subconverter/pkg/logger"
 	"io"
 	"net/http"
 	"strings"
@@ -42,7 +41,7 @@ func (s *HFDatasetStorage) GenerateID() (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
-// Save 保存配置到 HF Dataset (通过 commit NDJSON 格式)
+// Save 保存配置到 HF Dataset
 func (s *HFDatasetStorage) Save(cfg *SubscriptionConfig) error {
 	cfg.UpdatedAt = time.Now()
 	cfg.Version++
@@ -52,15 +51,18 @@ func (s *HFDatasetStorage) Save(cfg *SubscriptionConfig) error {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
 
-	filePath := cfg.ID + ".json"
+	return s.SaveFile(cfg.ID, "core.json", data)
+}
+
+// SaveFile 保存核心文件或缓存文件
+func (s *HFDatasetStorage) SaveFile(id, filename string, data []byte) error {
+	filePath := id + "/" + filename
 	base64Content := base64.StdEncoding.EncodeToString(data)
 
-	// 使用推荐的 NDJSON 格式
-	// 虽然 application/json 也支持，但 NDJSON 更规范且易于排错
 	header := map[string]interface{}{
 		"key": "header",
 		"value": map[string]interface{}{
-			"summary": "Update config " + cfg.ID,
+			"summary": "Update " + filePath,
 		},
 	}
 	op := map[string]interface{}{
@@ -72,117 +74,177 @@ func (s *HFDatasetStorage) Save(cfg *SubscriptionConfig) error {
 		},
 	}
 
+	return s.commit(header, op)
+}
+
+// commit 执行 NDJSON 提交
+func (s *HFDatasetStorage) commit(header, operation map[string]interface{}) error {
 	var buf bytes.Buffer
 	hJson, _ := json.Marshal(header)
 	buf.Write(hJson)
 	buf.WriteByte('\n')
-	oJson, _ := json.Marshal(op)
+	oJson, _ := json.Marshal(operation)
 	buf.Write(oJson)
 	buf.WriteByte('\n')
 
 	apiURL := fmt.Sprintf("https://huggingface.co/api/datasets/%s/commit/main", s.repoID)
-
 	req, err := http.NewRequest("POST", apiURL, &buf)
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return err
 	}
 
 	req.Header.Set("Authorization", "Bearer "+s.token)
 	req.Header.Set("Content-Type", "application/x-ndjson")
 
-	logger.Debug("Committing to HF (NDJSON)", "url", apiURL)
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to commit to HF: %w", err)
+		return err
 	}
 	defer resp.Body.Close()
 
-	respBody, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		logger.Error("HF API error response", "status", resp.StatusCode, "body", string(respBody))
+		respBody, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("HF commit error (%d): %s", resp.StatusCode, string(respBody))
 	}
-
-	logger.Info("Successfully committed to HF", "status", resp.StatusCode, "resp", string(respBody))
 	return nil
 }
 
-// Load 从 HF Dataset 加载配置 (raw URL, 完美)
+// Load 从 HF Dataset 加载配置
 func (s *HFDatasetStorage) Load(id string) (*SubscriptionConfig, error) {
-	rawURL := fmt.Sprintf("https://huggingface.co/datasets/%s/raw/main/%s.json", s.repoID, id)
-
-	req, err := http.NewRequest("GET", rawURL, nil)
+	data, err := s.LoadFile(id, "core.json")
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+s.token) // 私有 repo 需要
-
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to download from HF: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, fmt.Errorf("config not found: %s", id)
-	}
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("HF API error (%d): %s", resp.StatusCode, string(body))
+		return nil, err
 	}
 
 	var cfg SubscriptionConfig
-	if err := json.NewDecoder(resp.Body).Decode(&cfg); err != nil {
+	if err := json.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("failed to decode config: %w", err)
 	}
 
 	return &cfg, nil
 }
 
+// LoadFile 加载原始文件内容
+func (s *HFDatasetStorage) LoadFile(id, filename string) ([]byte, error) {
+	filePath := id + "/" + filename
+	rawURL := fmt.Sprintf("https://huggingface.co/datasets/%s/raw/main/%s", s.repoID, filePath)
+
+	req, err := http.NewRequest("GET", rawURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+s.token)
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, fmt.Errorf("file not found: %s", filePath)
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("HF API error (%d): %s", resp.StatusCode, string(body))
+	}
+
+	return io.ReadAll(resp.Body)
+}
+
 // Delete 从 HF Dataset 删除配置 (通过 commit NDJSON 格式)
 func (s *HFDatasetStorage) Delete(id string) error {
-	filePath := id + ".json"
-
 	header := map[string]interface{}{
 		"key": "header",
 		"value": map[string]interface{}{
-			"summary": "Delete config " + id,
+			"summary": "Delete directory " + id,
 		},
 	}
 	op := map[string]interface{}{
 		"key": "deletedEntry",
 		"value": map[string]interface{}{
-			"path": filePath,
+			"path": id, // 删除整个目录
 		},
 	}
 
+	return s.commit(header, op)
+}
+// ClearCache 清除该 ID 下的所有缓存文件 (保留 core.json)
+func (s *HFDatasetStorage) ClearCache(id string) error {
+	apiURL := fmt.Sprintf("https://huggingface.co/api/datasets/%s/tree/main/%s", s.repoID, id)
+	req, err := http.NewRequest("GET", apiURL, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+s.token)
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil
+	}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("list tree for clear cache failed: %d", resp.StatusCode)
+	}
+
+	var files []struct {
+		Type string `json:"type"`
+		Path string `json:"path"`
+	}
+	json.NewDecoder(resp.Body).Decode(&files)
+
+	var operations []map[string]interface{}
+	for _, f := range files {
+		if f.Type == "file" && !strings.HasSuffix(f.Path, "/core.json") {
+			operations = append(operations, map[string]interface{}{
+				"key": "deletedEntry",
+				"value": map[string]interface{}{
+					"path": f.Path,
+				},
+			})
+		}
+	}
+
+	if len(operations) == 0 {
+		return nil
+	}
+
+	header := map[string]interface{}{
+		"key": "header",
+		"value": map[string]interface{}{
+			"summary": "Clear cache for " + id,
+		},
+	}
+
+	// 这里需要批量提交多行 NDJSON，我们复用之前的 commit 逻辑
+	// 但之前的 commit 只支持单行 operation
 	var buf bytes.Buffer
 	hJson, _ := json.Marshal(header)
 	buf.Write(hJson)
 	buf.WriteByte('\n')
-	oJson, _ := json.Marshal(op)
-	buf.Write(oJson)
-	buf.WriteByte('\n')
-
-	apiURL := fmt.Sprintf("https://huggingface.co/api/datasets/%s/commit/main", s.repoID)
-
-	req, err := http.NewRequest("POST", apiURL, &buf)
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+	for _, op := range operations {
+		oJson, _ := json.Marshal(op)
+		buf.Write(oJson)
+		buf.WriteByte('\n')
 	}
 
-	req.Header.Set("Authorization", "Bearer "+s.token)
-	req.Header.Set("Content-Type", "application/x-ndjson")
+	apiURLCommit := fmt.Sprintf("https://huggingface.co/api/datasets/%s/commit/main", s.repoID)
+	reqCommit, _ := http.NewRequest("POST", apiURLCommit, &buf)
+	reqCommit.Header.Set("Authorization", "Bearer "+s.token)
+	reqCommit.Header.Set("Content-Type", "application/x-ndjson")
 
-	resp, err := s.client.Do(req)
+	respCommit, err := s.client.Do(reqCommit)
 	if err != nil {
-		return fmt.Errorf("failed to delete from HF: %w", err)
+		return err
 	}
-	defer resp.Body.Close()
+	defer respCommit.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("HF commit error (%d): %s", resp.StatusCode, string(respBody))
+	if respCommit.StatusCode != http.StatusOK && respCommit.StatusCode != http.StatusCreated {
+		return fmt.Errorf("clear cache commit failed: %d", respCommit.StatusCode)
 	}
 
 	return nil
@@ -219,11 +281,11 @@ func (s *HFDatasetStorage) List() ([]*SubscriptionConfig, error) {
 
 	var configs []*SubscriptionConfig
 	for _, f := range files {
-		if f.Type == "file" && strings.HasSuffix(f.Path, ".json") {
-			id := strings.TrimSuffix(f.Path, ".json")
+		if f.Type == "directory" {
+			id := f.Path
 			cfg, err := s.Load(id)
 			if err != nil {
-				continue // 跳过损坏的
+				continue
 			}
 			configs = append(configs, cfg)
 		}
